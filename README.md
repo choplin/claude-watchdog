@@ -16,8 +16,20 @@ Hook (auto-collect)  →  SQLite DB  →  CLI (display)
 
 ## 📦 Installation
 
+### From Marketplace
+
+Add the marketplace and install the plugin:
+
 ```bash
-claude /install-plugin /path/to/claude-code-monitor
+/plugin marketplace add owner/claude-code-monitor
+/plugin install claude-code-monitor@claude-code-monitor
+```
+
+### From Local Path
+
+```bash
+/plugin marketplace add ./path/to/claude-code-monitor
+/plugin install claude-code-monitor@claude-code-monitor
 ```
 
 ## 🔍 How It Works
