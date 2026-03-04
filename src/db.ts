@@ -3,10 +3,15 @@ import { homedir } from "os";
 import { join } from "path";
 import type { Session, HookEvent } from "./types";
 
-const DB_PATH = join(homedir(), ".claude", "claude-code-monitor.db");
+function getDbPath(): string {
+  return (
+    process.env.CLAUDE_CODE_MONITOR_DB ??
+    join(homedir(), ".claude", "claude-code-monitor.db")
+  );
+}
 
 function getDb(): Database {
-  const db = new Database(DB_PATH, { create: true });
+  const db = new Database(getDbPath(), { create: true });
   db.run("PRAGMA journal_mode = WAL");
   return db;
 }
