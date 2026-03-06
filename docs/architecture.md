@@ -20,13 +20,13 @@ The system has three layers:
 
 All invocations (hooks and CLI) go through `bin/claude-code-monitor`, a shell script that:
 
-1. Uses the compiled binary (`bin/.compiled`) if available
-2. Falls back to `bun run src/cli.ts`
-3. Triggers a background `bun build --compile` on first use (mkdir-based lock prevents concurrent builds)
+1. Builds the compiled binary (`bin/.compiled`) if missing or source has changed
+2. Executes the compiled binary
 
 ```
-First run:  bin/claude-code-monitor → bun run src/cli.ts → background build
+First run:  bin/claude-code-monitor → bun build --compile → exec bin/.compiled
 Next runs:  bin/claude-code-monitor → exec bin/.compiled (fast, no bun needed)
+Source changed: bin/claude-code-monitor → rebuild → exec bin/.compiled
 ```
 
 ## Data Flow
@@ -75,6 +75,7 @@ CREATE TABLE sessions (
   cwd        TEXT NOT NULL,
   event      TEXT NOT NULL,
   tool_name  TEXT,
+  created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   tmux_pane  TEXT
 );
@@ -86,6 +87,7 @@ CREATE TABLE sessions (
 | `cwd` | Working directory of the session |
 | `event` | Last hook event name |
 | `tool_name` | Tool name for `PreToolUse` events, NULL otherwise |
+| `created_at` | Unix timestamp of session creation (immutable after INSERT) |
 | `updated_at` | Unix timestamp of last update |
 | `tmux_pane` | `$TMUX_PANE` if running in tmux, NULL otherwise |
 

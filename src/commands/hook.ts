@@ -23,15 +23,23 @@ export async function runHook(args: string[]): Promise<void> {
   const cwd = data.cwd;
   const tmuxPane = process.env.TMUX_PANE ?? null;
 
-  if (!sessionId || !cwd) {
+  if (!sessionId) {
+    process.exit(0);
+  }
+
+  if (event === "SessionEnd") {
+    initDb();
+    deleteSession(sessionId);
+    return;
+  }
+
+  if (!cwd) {
     process.exit(0);
   }
 
   initDb();
 
-  if (event === "SessionEnd") {
-    deleteSession(sessionId);
-  } else if (UPDATE_EVENTS.includes(event)) {
+  if (UPDATE_EVENTS.includes(event)) {
     upsertSession(sessionId, cwd, event, toolName, tmuxPane);
   }
 }

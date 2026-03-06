@@ -1,24 +1,17 @@
 #!/usr/bin/env bash
 # Unified entry point for claude-code-monitor
 # Used by both hooks and direct CLI invocation
-# Auto-builds a compiled binary on first use for faster subsequent runs
+# Compiles on first use or when source changes, then runs the compiled binary
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPILED="${SCRIPT_DIR}/.compiled"
-LOCK_DIR="${SCRIPT_DIR}/.build-lock"
 
-# Use compiled binary if available
-if [[ -x "$COMPILED" ]]; then
-  exec "$COMPILED" "$@"
+# Rebuild if binary is missing or source has changed
+if [[ ! -x "$COMPILED" ]] || [[ -n "$(find "$ROOT_DIR/src" "$ROOT_DIR/package.json" -newer "$COMPILED" 2>/dev/null)" ]]; then
+  bun build --compile --minify "${ROOT_DIR}/src/cli.ts" --outfile "$COMPILED" >&2
 fi
 
-# Fallback: run from source
-bun run "${ROOT_DIR}/src/cli.ts" "$@"
-
-# Trigger background build (mkdir is atomic, acts as lock)
-if mkdir "$LOCK_DIR" 2>/dev/null; then
-  (bun build --compile --minify "${ROOT_DIR}/src/cli.ts" --outfile "$COMPILED" 2>/dev/null; rmdir "$LOCK_DIR") &
-fi
+exec "$COMPILED" "$@"

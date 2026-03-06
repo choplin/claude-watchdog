@@ -31,6 +31,15 @@ export function formatState(state: SessionState): string {
   }
 }
 
+// Format elapsed time from unix timestamp
+export function formatElapsed(updatedAt: number): string {
+  const seconds = Math.floor(Date.now() / 1000 - updatedAt);
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
+}
+
 // Calculate summary from sessions
 export function calculateSummary(sessions: Session[]): Summary {
   let running = 0;

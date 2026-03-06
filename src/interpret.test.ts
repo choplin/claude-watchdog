@@ -1,5 +1,10 @@
 import { describe, test, expect } from "bun:test";
-import { interpretState, formatState, calculateSummary } from "./interpret";
+import {
+  interpretState,
+  formatState,
+  formatElapsed,
+  calculateSummary,
+} from "./interpret";
 import type { Session } from "./types";
 
 function makeSession(overrides: Partial<Session> = {}): Session {
@@ -8,6 +13,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     cwd: "/test/project",
     event: "SessionStart",
     tool_name: null,
+    created_at: Math.floor(Date.now() / 1000),
     updated_at: Math.floor(Date.now() / 1000),
     tmux_pane: null,
     ...overrides,
@@ -83,6 +89,30 @@ describe("formatState", () => {
 
   test("formats running", () => {
     expect(formatState("running")).toBe("running");
+  });
+});
+
+describe("formatElapsed", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  test("seconds", () => {
+    expect(formatElapsed(now - 30)).toBe("30s");
+  });
+
+  test("minutes", () => {
+    expect(formatElapsed(now - 300)).toBe("5m");
+  });
+
+  test("hours", () => {
+    expect(formatElapsed(now - 7200)).toBe("2h");
+  });
+
+  test("days", () => {
+    expect(formatElapsed(now - 172800)).toBe("2d");
+  });
+
+  test("zero seconds", () => {
+    expect(formatElapsed(now)).toBe("0s");
   });
 });
 

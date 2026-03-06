@@ -15,7 +15,8 @@ export interface Session {
   cwd: string;
   event: HookEvent;
   tool_name: string | null; // Only for PreToolUse
-  updated_at: number; // Unix timestamp
+  created_at: number; // Unix timestamp (session start)
+  updated_at: number; // Unix timestamp (last event)
   tmux_pane: string | null;
 }
 

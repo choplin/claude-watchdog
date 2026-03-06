@@ -113,7 +113,8 @@ describe("CLI: list", () => {
     );
     const result = runCli("list");
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toBe("my-project: waiting (input)");
+    expect(result.stdout).toContain("my-project");
+    expect(result.stdout).toContain("waiting (input)");
   });
 
   test("shows running state for UserPromptSubmit", () => {
@@ -127,7 +128,8 @@ describe("CLI: list", () => {
       "UserPromptSubmit"
     );
     const result = runCli("list");
-    expect(result.stdout).toBe("proj: running");
+    expect(result.stdout).toContain("proj");
+    expect(result.stdout).toContain("running");
   });
 
   test("shows waiting (question) for AskUserQuestion", () => {
@@ -143,7 +145,70 @@ describe("CLI: list", () => {
       "AskUserQuestion"
     );
     const result = runCli("list");
-    expect(result.stdout).toBe("proj: waiting (question)");
+    expect(result.stdout).toContain("proj");
+    expect(result.stdout).toContain("waiting (question)");
+  });
+
+  test("shows elapsed time column", () => {
+    runCli(
+      "update",
+      "--session-id",
+      "s1",
+      "--cwd",
+      "/home/user/proj",
+      "--event",
+      "SessionStart"
+    );
+    const result = runCli("list");
+    // Elapsed should be a short time like "0s" or "1s"
+    expect(result.stdout).toMatch(/\d+s/);
+  });
+
+  test("shows tmux pane when available", () => {
+    runCli(
+      "update",
+      "--session-id",
+      "s1",
+      "--cwd",
+      "/home/user/proj",
+      "--event",
+      "SessionStart",
+      "--tmux-pane",
+      "%0"
+    );
+    const result = runCli("list");
+    expect(result.stdout).toContain("%0");
+  });
+
+  test("shows dash when tmux pane is not set", () => {
+    runCli(
+      "update",
+      "--session-id",
+      "s1",
+      "--cwd",
+      "/home/user/proj",
+      "--event",
+      "SessionStart"
+    );
+    const result = runCli("list");
+    expect(result.stdout).toContain("-");
+  });
+
+  test("shows table header", () => {
+    runCli(
+      "update",
+      "--session-id",
+      "s1",
+      "--cwd",
+      "/home/user/proj",
+      "--event",
+      "SessionStart"
+    );
+    const result = runCli("list");
+    expect(result.stdout).toContain("PROJECT");
+    expect(result.stdout).toContain("STATE");
+    expect(result.stdout).toContain("ELAPSED");
+    expect(result.stdout).toContain("PANE");
   });
 
   test("outputs JSON with --format json", () => {
@@ -329,6 +394,13 @@ describe("CLI: hook", () => {
   test("exits silently with missing cwd", () => {
     const result = runHook("SessionStart", { session_id: "h5" });
     expect(result.exitCode).toBe(0);
+  });
+
+  test("deletes session on SessionEnd even without cwd", () => {
+    runHook("SessionStart", { session_id: "h-no-cwd", cwd: "/path/proj" });
+    runHook("SessionEnd", { session_id: "h-no-cwd" });
+    const list = runCli("list");
+    expect(list.stdout).toBe("No active sessions");
   });
 });
 
