@@ -5,9 +5,17 @@ import { listSessions } from "../db";
 import { interpretState, formatState, formatElapsed } from "../interpret";
 import type { OutputFormat, SessionState } from "../types";
 
-const isTTY = process.stdout.isTTY;
+type ColorMode = "auto" | "always" | "never";
+
+function shouldColor(mode: ColorMode): boolean {
+  if (mode === "always") return true;
+  if (mode === "never") return false;
+  return !!process.stdout.isTTY;
+}
+
+let useColor = shouldColor("auto");
 const color = (code: number, text: string): string =>
-  isTTY ? `\x1b[${code}m${text}\x1b[0m` : text;
+  useColor ? `\x1b[${code}m${text}\x1b[0m` : text;
 
 function stateIcon(state: SessionState): string {
   switch (state) {
@@ -39,9 +47,12 @@ export function runList(args: string[]): void {
     args,
     options: {
       format: { type: "string", default: "text" },
+      color: { type: "string", default: "auto" },
     },
   });
 
+  const colorMode = values.color as ColorMode;
+  useColor = shouldColor(colorMode);
   const format = values.format as OutputFormat;
   const sessions = listSessions();
 
