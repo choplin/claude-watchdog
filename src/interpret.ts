@@ -33,9 +33,21 @@ export function formatState(state: SessionState): string {
 
 // Format elapsed time from unix timestamp
 export function formatElapsed(updatedAt: number): string {
-  const seconds = Math.floor(Date.now() / 1000 - updatedAt);
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
-  return `${Math.floor(seconds / 86400)}d`;
+  let remaining = Math.floor(Date.now() / 1000 - updatedAt);
+  if (remaining < 60) return `${remaining}s`;
+
+  const d = Math.floor(remaining / 86400);
+  remaining %= 86400;
+  const h = Math.floor(remaining / 3600);
+  remaining %= 3600;
+  const m = Math.floor(remaining / 60);
+  remaining %= 60;
+
+  let result = "";
+  if (d > 0) result += `${d}d`;
+  if (d > 0 || h > 0) result += `${h}h`;
+  result += `${m}m`;
+  // Show seconds only when under 1 hour
+  if (d === 0 && h === 0) result += `${remaining}s`;
+  return result;
 }

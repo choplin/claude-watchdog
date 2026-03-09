@@ -90,23 +90,25 @@ describe("formatState", () => {
 describe("formatElapsed", () => {
   const now = Math.floor(Date.now() / 1000);
 
-  test("seconds", () => {
+  test("under 1 minute shows seconds only", () => {
+    expect(formatElapsed(now)).toBe("0s");
     expect(formatElapsed(now - 30)).toBe("30s");
   });
 
-  test("minutes", () => {
-    expect(formatElapsed(now - 300)).toBe("5m");
+  test("under 1 hour shows minutes and seconds", () => {
+    expect(formatElapsed(now - 300)).toBe("5m0s");
+    expect(formatElapsed(now - 330)).toBe("5m30s");
   });
 
-  test("hours", () => {
-    expect(formatElapsed(now - 7200)).toBe("2h");
+  test("under 1 day shows hours and minutes", () => {
+    expect(formatElapsed(now - 3600)).toBe("1h0m");
+    expect(formatElapsed(now - 5400)).toBe("1h30m");
   });
 
-  test("days", () => {
-    expect(formatElapsed(now - 172800)).toBe("2d");
-  });
-
-  test("zero seconds", () => {
-    expect(formatElapsed(now)).toBe("0s");
+  test("1 day or more shows days, hours, and minutes", () => {
+    expect(formatElapsed(now - 86400)).toBe("1d0h0m");
+    expect(formatElapsed(now - 90000)).toBe("1d1h0m");
+    expect(formatElapsed(now - 172800)).toBe("2d0h0m");
+    expect(formatElapsed(now - 176400)).toBe("2d1h0m");
   });
 });
