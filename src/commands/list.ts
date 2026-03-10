@@ -68,7 +68,7 @@ export function runList(args: string[]): void {
       console.log("No active sessions");
     } else {
       const table = new Table({
-        head: ["PROJECT", "STATE", "ELAPSED", "PANE"],
+        head: ["PROJECT", "STATE", "ELAPSED", "SESSION", "PANE"],
         chars: {
           top: "",
           "top-mid": "",
@@ -99,6 +99,7 @@ export function runList(args: string[]): void {
         table.push([
           basename(session.cwd),
           `${stateIcon(state)} ${stateLabel(state)}`,
+          formatElapsed(session.state_changed_at),
           formatElapsed(session.created_at),
           session.tmux_pane ?? "-",
         ]);

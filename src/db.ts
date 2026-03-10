@@ -27,6 +27,7 @@ export function initDb(): void {
         tool_name TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
+        state_changed_at INTEGER NOT NULL,
         tmux_pane TEXT
       )
     `);
@@ -46,15 +47,21 @@ export function upsertSession(
   try {
     const now = Math.floor(Date.now() / 1000);
     db.run(
-      `INSERT INTO sessions (session_id, cwd, event, tool_name, created_at, updated_at, tmux_pane)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO sessions (session_id, cwd, event, tool_name, created_at, updated_at, state_changed_at, tmux_pane)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(session_id) DO UPDATE SET
          cwd = excluded.cwd,
          event = excluded.event,
          tool_name = excluded.tool_name,
          updated_at = excluded.updated_at,
+         state_changed_at = CASE
+           WHEN sessions.event != excluded.event
+             OR COALESCE(sessions.tool_name, '') != COALESCE(excluded.tool_name, '')
+           THEN excluded.updated_at
+           ELSE sessions.state_changed_at
+         END,
          tmux_pane = COALESCE(excluded.tmux_pane, sessions.tmux_pane)`,
-      [sessionId, cwd, event, toolName, now, now, tmuxPane]
+      [sessionId, cwd, event, toolName, now, now, now, tmuxPane]
     );
   } finally {
     db.close();

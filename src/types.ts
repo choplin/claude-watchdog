@@ -17,6 +17,7 @@ export interface Session {
   tool_name: string | null; // Only for PreToolUse
   created_at: number; // Unix timestamp (session start)
   updated_at: number; // Unix timestamp (last event)
+  state_changed_at: number; // Unix timestamp (last state change)
   tmux_pane: string | null;
 }
 

@@ -208,6 +208,7 @@ describe("CLI: list", () => {
     expect(result.stdout).toContain("PROJECT");
     expect(result.stdout).toContain("STATE");
     expect(result.stdout).toContain("ELAPSED");
+    expect(result.stdout).toContain("SESSION");
     expect(result.stdout).toContain("PANE");
   });
 

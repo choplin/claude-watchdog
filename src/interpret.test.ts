@@ -10,6 +10,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     tool_name: null,
     created_at: Math.floor(Date.now() / 1000),
     updated_at: Math.floor(Date.now() / 1000),
+    state_changed_at: Math.floor(Date.now() / 1000),
     tmux_pane: null,
     ...overrides,
   };
