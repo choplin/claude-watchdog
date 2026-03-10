@@ -31,17 +31,6 @@ export function initDb(): void {
         tmux_pane TEXT
       )
     `);
-    // Migration: add state_changed_at column if missing
-    const columns = db
-      .query<{ name: string }, []>("PRAGMA table_info(sessions)")
-      .all()
-      .map((c) => c.name);
-    if (!columns.includes("state_changed_at")) {
-      db.run(
-        "ALTER TABLE sessions ADD COLUMN state_changed_at INTEGER NOT NULL DEFAULT 0"
-      );
-      db.run("UPDATE sessions SET state_changed_at = updated_at");
-    }
   } finally {
     db.close();
   }
