@@ -18,7 +18,8 @@ export interface Session {
   created_at: number; // Unix timestamp (session start)
   updated_at: number; // Unix timestamp (last event)
   state_changed_at: number; // Unix timestamp (last state change)
-  tmux_pane: string | null;
+  pane_id: string | null;
+  pane_terminal: string | null;
 }
 
 // Interpreted session states (derived at display time)

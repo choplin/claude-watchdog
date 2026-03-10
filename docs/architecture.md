@@ -71,13 +71,15 @@ Location: `~/.claude/claude-code-monitor.db` (SQLite, WAL mode)
 
 ```sql
 CREATE TABLE sessions (
-  session_id TEXT PRIMARY KEY,
-  cwd        TEXT NOT NULL,
-  event      TEXT NOT NULL,
-  tool_name  TEXT,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  tmux_pane  TEXT
+  session_id    TEXT PRIMARY KEY,
+  cwd           TEXT NOT NULL,
+  event         TEXT NOT NULL,
+  tool_name     TEXT,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL,
+  state_changed_at INTEGER NOT NULL,
+  pane_id       TEXT,
+  pane_terminal TEXT
 );
 ```
 
@@ -89,7 +91,9 @@ CREATE TABLE sessions (
 | `tool_name` | Tool name for `PreToolUse` events, NULL otherwise |
 | `created_at` | Unix timestamp of session creation (immutable after INSERT) |
 | `updated_at` | Unix timestamp of last update |
-| `tmux_pane` | `$TMUX_PANE` if running in tmux, NULL otherwise |
+| `state_changed_at` | Unix timestamp of last state change |
+| `pane_id` | Terminal pane identifier (e.g., `%0` for tmux, `3` for WezTerm) |
+| `pane_terminal` | Terminal type (e.g., `tmux`, `wez`), NULL if not in a multiplexer |
 
 Each session has exactly one row. New events overwrite the previous row via UPSERT.
 
@@ -111,6 +115,23 @@ reads stdin JSON, extracts `session_id` and `cwd`, and calls `upsertSession`/
 `deleteSession` directly (no subprocess spawning).
 
 Errors are silently caught to never block Claude Code.
+
+## Terminal Detection
+
+Defined in `src/terminal.ts`. A pluggable detector system identifies the terminal
+multiplexer environment. Each detector checks an environment variable and returns
+a `PaneInfo` (terminal type + pane ID). First match wins.
+
+| Terminal | Env Variable | `terminal` | Example `paneId` |
+|----------|-------------|------------|-------------------|
+| tmux | `TMUX_PANE` | `tmux` | `%0` |
+| WezTerm | `WEZTERM_PANE` | `wez` | `3` |
+
+To add a new terminal, append a detector function to the `detectors` array in
+`src/terminal.ts`.
+
+The PANE column in `list` output displays `terminal:paneId` (e.g., `tmux:%0`, `wez:3`)
+or `-` when no multiplexer is detected.
 
 ## Session State Machine
 
@@ -142,6 +163,7 @@ claude-code-monitor/
 │   ├── cli.ts               # CLI entry point
 │   ├── db.ts                # Database operations
 │   ├── interpret.ts         # State interpretation logic
+│   ├── terminal.ts          # Terminal pane detection
 │   ├── types.ts             # Type definitions
 │   └── commands/
 │       ├── delete.ts        # `delete` command

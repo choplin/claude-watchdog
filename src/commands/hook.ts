@@ -1,5 +1,6 @@
 import { initDb, upsertSession, deleteSession } from "../db";
 import type { HookEvent } from "../types";
+import { detectPane } from "../terminal";
 
 const UPDATE_EVENTS: HookEvent[] = [
   "SessionStart",
@@ -21,7 +22,7 @@ export async function runHook(args: string[]): Promise<void> {
 
   const sessionId = data.session_id;
   const cwd = data.cwd;
-  const tmuxPane = process.env.TMUX_PANE ?? null;
+  const pane = detectPane();
 
   if (!sessionId) {
     process.exit(0);
@@ -40,6 +41,6 @@ export async function runHook(args: string[]): Promise<void> {
   initDb();
 
   if (UPDATE_EVENTS.includes(event)) {
-    upsertSession(sessionId, cwd, event, toolName, tmuxPane);
+    upsertSession(sessionId, cwd, event, toolName, pane);
   }
 }

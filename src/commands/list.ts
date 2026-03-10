@@ -3,6 +3,7 @@ import { basename } from "path";
 import Table from "cli-table3";
 import { listSessions } from "../db";
 import { interpretState, formatState, formatElapsed } from "../interpret";
+import { formatPane } from "../terminal";
 import type { OutputFormat, SessionState } from "../types";
 
 type ColorMode = "auto" | "always" | "never";
@@ -101,7 +102,7 @@ export function runList(args: string[]): void {
           `${stateIcon(state)} ${stateLabel(state)}`,
           formatElapsed(session.state_changed_at),
           formatElapsed(session.created_at),
-          session.tmux_pane ?? "-",
+          formatPane(session),
         ]);
       }
 

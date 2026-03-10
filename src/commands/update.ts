@@ -1,6 +1,7 @@
 import { parseArgs } from "util";
 import { upsertSession } from "../db";
 import type { HookEvent } from "../types";
+import type { PaneInfo } from "../terminal";
 
 const VALID_EVENTS: HookEvent[] = [
   "SessionStart",
@@ -17,7 +18,8 @@ export function runUpdate(args: string[]): void {
       cwd: { type: "string" },
       event: { type: "string" },
       "tool-name": { type: "string" },
-      "tmux-pane": { type: "string" },
+      "pane-id": { type: "string" },
+      "pane-terminal": { type: "string" },
     },
   });
 
@@ -25,7 +27,8 @@ export function runUpdate(args: string[]): void {
   const cwd = values.cwd;
   const event = values.event as HookEvent;
   const toolName = values["tool-name"] ?? null;
-  const tmuxPane = values["tmux-pane"] ?? null;
+  const paneId = values["pane-id"] ?? null;
+  const paneTerminal = values["pane-terminal"] ?? null;
 
   if (!sessionId || !cwd || !event) {
     console.error(
@@ -41,5 +44,10 @@ export function runUpdate(args: string[]): void {
     process.exit(1);
   }
 
-  upsertSession(sessionId, cwd, event, toolName, tmuxPane);
+  let pane: PaneInfo | null = null;
+  if (paneId && paneTerminal) {
+    pane = { paneId, terminal: paneTerminal };
+  }
+
+  upsertSession(sessionId, cwd, event, toolName, pane);
 }

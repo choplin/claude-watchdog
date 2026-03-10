@@ -76,7 +76,7 @@ describe("CLI: update", () => {
     expect(result.stderr).toContain("Invalid event");
   });
 
-  test("accepts optional tool-name and tmux-pane", () => {
+  test("accepts optional tool-name, pane-id, and pane-terminal", () => {
     const result = runCli(
       "update",
       "--session-id",
@@ -87,8 +87,10 @@ describe("CLI: update", () => {
       "PreToolUse",
       "--tool-name",
       "AskUserQuestion",
-      "--tmux-pane",
-      "%0"
+      "--pane-id",
+      "%0",
+      "--pane-terminal",
+      "tmux"
     );
     expect(result.exitCode).toBe(0);
   });
@@ -164,7 +166,7 @@ describe("CLI: list", () => {
     expect(result.stdout).toMatch(/\d+s/);
   });
 
-  test("shows tmux pane when available", () => {
+  test("shows formatted pane when available", () => {
     runCli(
       "update",
       "--session-id",
@@ -173,14 +175,16 @@ describe("CLI: list", () => {
       "/home/user/proj",
       "--event",
       "SessionStart",
-      "--tmux-pane",
-      "%0"
+      "--pane-id",
+      "%0",
+      "--pane-terminal",
+      "tmux"
     );
     const result = runCli("list");
-    expect(result.stdout).toContain("%0");
+    expect(result.stdout).toContain("tmux:%0");
   });
 
-  test("shows dash when tmux pane is not set", () => {
+  test("shows dash when pane is not set", () => {
     runCli(
       "update",
       "--session-id",
@@ -241,8 +245,10 @@ describe("CLI: list", () => {
       "PreToolUse",
       "--tool-name",
       "ExitPlanMode",
-      "--tmux-pane",
-      "%0"
+      "--pane-id",
+      "%0",
+      "--pane-terminal",
+      "tmux"
     );
     const result = runCli("list", "--format", "json");
     const parsed = JSON.parse(result.stdout);
@@ -252,7 +258,8 @@ describe("CLI: list", () => {
         cwd: "/path/project",
         event: "PreToolUse",
         tool_name: "ExitPlanMode",
-        tmux_pane: "%0",
+        pane_id: "%0",
+        pane_terminal: "tmux",
         interpreted_state: "waiting_approval",
       })
     );

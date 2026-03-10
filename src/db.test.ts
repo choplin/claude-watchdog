@@ -2,6 +2,7 @@ import { describe, test, expect, beforeEach, afterAll } from "bun:test";
 import { join } from "path";
 import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
+import { Database } from "bun:sqlite";
 import { initDb, upsertSession, listSessions, deleteSession } from "./db";
 
 const testDir = mkdtempSync(join(tmpdir(), "ccm-db-test-"));
@@ -40,6 +41,46 @@ describe("initDb", () => {
     initDb();
     expect(listSessions()).toEqual([]);
   });
+
+  test("migrates tmux_pane to pane_id and pane_terminal", () => {
+    // Create a DB with old schema
+    try {
+      rmSync(testDb);
+    } catch {}
+    const db = new Database(testDb, { create: true });
+    db.run("PRAGMA journal_mode = WAL");
+    db.run(`
+      CREATE TABLE sessions (
+        session_id TEXT PRIMARY KEY,
+        cwd TEXT NOT NULL,
+        event TEXT NOT NULL,
+        tool_name TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        state_changed_at INTEGER NOT NULL,
+        tmux_pane TEXT
+      )
+    `);
+    db.run(
+      `INSERT INTO sessions VALUES ('s1', '/test', 'SessionStart', NULL, 1000, 1000, 1000, '%0')`
+    );
+    db.run(
+      `INSERT INTO sessions VALUES ('s2', '/test2', 'Stop', NULL, 2000, 2000, 2000, NULL)`
+    );
+    db.close();
+
+    // Run migration
+    initDb();
+
+    const sessions = listSessions();
+    const s1 = sessions.find((s) => s.session_id === "s1")!;
+    const s2 = sessions.find((s) => s.session_id === "s2")!;
+
+    expect(s1.pane_id).toBe("%0");
+    expect(s1.pane_terminal).toBe("tmux");
+    expect(s2.pane_id).toBeNull();
+    expect(s2.pane_terminal).toBeNull();
+  });
 });
 
 describe("upsertSession", () => {
@@ -51,7 +92,8 @@ describe("upsertSession", () => {
     expect(sessions[0].cwd).toBe("/path/project");
     expect(sessions[0].event).toBe("SessionStart");
     expect(sessions[0].tool_name).toBeNull();
-    expect(sessions[0].tmux_pane).toBeNull();
+    expect(sessions[0].pane_id).toBeNull();
+    expect(sessions[0].pane_terminal).toBeNull();
   });
 
   test("updates existing session on conflict", () => {
@@ -75,18 +117,29 @@ describe("upsertSession", () => {
     expect(sessions[0].tool_name).toBeNull();
   });
 
-  test("preserves tmux_pane via COALESCE when new value is null", () => {
-    upsertSession("s1", "/path/project", "SessionStart", null, "%0");
+  test("preserves pane via COALESCE when new value is null", () => {
+    upsertSession("s1", "/path/project", "SessionStart", null, {
+      terminal: "tmux",
+      paneId: "%0",
+    });
     upsertSession("s1", "/path/project", "UserPromptSubmit", null, null);
     const sessions = listSessions();
-    expect(sessions[0].tmux_pane).toBe("%0");
+    expect(sessions[0].pane_id).toBe("%0");
+    expect(sessions[0].pane_terminal).toBe("tmux");
   });
 
-  test("overwrites tmux_pane when new value is provided", () => {
-    upsertSession("s1", "/path/project", "SessionStart", null, "%0");
-    upsertSession("s1", "/path/project", "UserPromptSubmit", null, "%1");
+  test("overwrites pane when new value is provided", () => {
+    upsertSession("s1", "/path/project", "SessionStart", null, {
+      terminal: "tmux",
+      paneId: "%0",
+    });
+    upsertSession("s1", "/path/project", "UserPromptSubmit", null, {
+      terminal: "wez",
+      paneId: "3",
+    });
     const sessions = listSessions();
-    expect(sessions[0].tmux_pane).toBe("%1");
+    expect(sessions[0].pane_id).toBe("3");
+    expect(sessions[0].pane_terminal).toBe("wez");
   });
 
   test("sets updated_at to current unix timestamp", () => {
