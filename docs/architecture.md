@@ -180,6 +180,39 @@ To add a new terminal, append a detector function to the `detectors` array in
 The PANE column in `list` output displays `terminal:paneId` (e.g., `tmux:%0`, `wez:3`)
 or `-` when no multiplexer is detected.
 
+## Reconcile (Stale Session Cleanup)
+
+Defined in `src/reconcile.ts`. Removes sessions that persist after Claude Code crashes
+or is killed without sending `SessionEnd`.
+
+### Strategy: Hybrid (Pane Check + TTL)
+
+- **Sessions with `pane_id`**: Check if the terminal pane still exists via CLI. If the pane is gone, the session is stale.
+- **Sessions without `pane_id`**: Fall back to TTL. If `updated_at` is older than 24 hours, the session is stale.
+- **Pane check fails** (CLI not found, timeout): Skip that session (do not delete, do not fall back to TTL).
+
+### Pane Existence Checks
+
+| Terminal | Command | Timeout | Parse |
+|----------|---------|---------|-------|
+| tmux | `tmux list-panes -a -F '#{pane_id}'` | 3s | Set of lines |
+| wez | `wezterm cli list --format json` | 5s | Set of `String(pane_id)` |
+
+Uses `execFileSync` with timeout. Results are cached per terminal type within a single
+reconcile call, so each terminal CLI runs at most once.
+
+### Timing
+
+- Auto-reconcile runs at the start of `list` (opt-out via `--no-reconcile`)
+- Standalone `reconcile` command also available
+
+### Stale Session Handling
+
+For each stale session:
+1. Capture `prevState` via `interpretState(session)`
+2. Call `deleteSession(session.session_id)`
+3. Fire user hooks with `SessionEnd` context (same pattern as `src/commands/hook.ts`)
+
 ## Session State Machine
 
 Defined in `src/interpret.ts`. The interpretation maps raw events to display states:
@@ -211,6 +244,7 @@ claude-code-monitor/
 │   ├── config.ts            # User config loading (XDG, TOML)
 │   ├── db.ts                # Database operations (better-sqlite3)
 │   ├── interpret.ts         # State interpretation logic
+│   ├── reconcile.ts         # Stale session cleanup (pane check + TTL)
 │   ├── terminal.ts          # Terminal pane detection
 │   ├── types.ts             # Type definitions
 │   ├── user-hooks.ts        # User-defined hook matching + execution
@@ -218,6 +252,7 @@ claude-code-monitor/
 │       ├── delete.ts        # `delete` command
 │       ├── hook.ts          # `hook` command (stdin-based, used by hooks)
 │       ├── list.ts          # `list` command
+│       ├── reconcile.ts     # `reconcile` command
 │       └── update.ts        # `update` command
 ├── package.json
 └── tsconfig.json

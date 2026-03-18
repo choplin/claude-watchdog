@@ -4,6 +4,7 @@ import Table from "cli-table3";
 import { listSessions } from "../db";
 import { interpretState, formatState, formatElapsed } from "../interpret";
 import { formatPane, paneColumnHeader } from "../terminal";
+import { reconcile } from "../reconcile";
 import type { OutputFormat, SessionState } from "../types";
 
 type ColorMode = "auto" | "always" | "never";
@@ -49,12 +50,18 @@ export function runList(args: string[]): void {
     options: {
       format: { type: "string", default: "text" },
       color: { type: "string", default: "auto" },
+      "no-reconcile": { type: "boolean", default: false },
     },
   });
 
   const colorMode = values.color as ColorMode;
   useColor = shouldColor(colorMode);
   const format = values.format as OutputFormat;
+
+  if (!values["no-reconcile"]) {
+    reconcile();
+  }
+
   const sessions = listSessions();
 
   if (format === "json") {

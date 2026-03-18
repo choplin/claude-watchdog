@@ -88,6 +88,26 @@ JSON format:
 claude-code-monitor list --format json
 ```
 
+Skip auto-reconcile (stale session cleanup):
+
+```bash
+claude-code-monitor list --no-reconcile
+```
+
+#### `reconcile` — Remove stale sessions
+
+Cleans up ghost sessions from crashed or killed Claude Code instances.
+
+- Sessions with a terminal pane: checks if the pane still exists (tmux/WezTerm)
+- Sessions without a pane: removed if not updated in the last 24 hours
+
+```bash
+claude-code-monitor reconcile
+claude-code-monitor reconcile --format json
+```
+
+Auto-reconcile also runs at the start of `list` (opt-out via `--no-reconcile`).
+
 #### `update` — Register/update a session (internal)
 
 Used internally by hooks. Not intended for direct use.
