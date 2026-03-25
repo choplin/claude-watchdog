@@ -36,6 +36,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     cwd: "/test/project",
     event: "Stop",
     tool_name: null,
+    session_name: null,
     created_at: now,
     updated_at: now,
     state_changed_at: now,
@@ -164,6 +165,7 @@ describe("reconcile", () => {
       cwd: "/my/project",
       event: "SessionEnd",
       toolName: null,
+      sessionName: null,
       state: "",
       prevState: "waiting_input", // Stop → waiting_input
       paneId: "%0",

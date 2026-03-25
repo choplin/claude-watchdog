@@ -15,6 +15,7 @@ export interface Session {
   cwd: string;
   event: HookEvent;
   tool_name: string | null; // Only for PreToolUse
+  session_name: string | null; // Semantic session name (e.g. "auth-refactor")
   created_at: number; // Unix timestamp (session start)
   updated_at: number; // Unix timestamp (last event)
   state_changed_at: number; // Unix timestamp (last state change)

@@ -109,7 +109,7 @@ export function runList(args: string[]): void {
       for (const session of sessions) {
         const state = interpretState(session);
         const row = [
-          basename(session.cwd),
+          session.session_name ?? basename(session.cwd),
           `${stateIcon(state)} ${stateLabel(state)}`,
           formatElapsed(session.state_changed_at),
           formatElapsed(session.created_at),

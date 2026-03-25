@@ -18,6 +18,7 @@ export function runUpdate(args: string[]): void {
       cwd: { type: "string" },
       event: { type: "string" },
       "tool-name": { type: "string" },
+      "session-name": { type: "string" },
       "pane-id": { type: "string" },
       "pane-terminal": { type: "string" },
     },
@@ -27,6 +28,7 @@ export function runUpdate(args: string[]): void {
   const cwd = values.cwd;
   const event = values.event as HookEvent;
   const toolName = values["tool-name"] ?? null;
+  const sessionName = values["session-name"] ?? null;
   const paneId = values["pane-id"] ?? null;
   const paneTerminal = values["pane-terminal"] ?? null;
 
@@ -49,5 +51,5 @@ export function runUpdate(args: string[]): void {
     pane = { paneId, terminal: paneTerminal };
   }
 
-  upsertSession(sessionId, cwd, event, toolName, pane);
+  upsertSession(sessionId, cwd, event, toolName, pane, sessionName);
 }

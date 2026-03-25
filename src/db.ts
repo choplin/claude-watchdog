@@ -26,6 +26,7 @@ export function initDb(): void {
         cwd TEXT NOT NULL,
         event TEXT NOT NULL,
         tool_name TEXT,
+        session_name TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         state_changed_at INTEGER NOT NULL,
@@ -43,6 +44,11 @@ export function initDb(): void {
         "UPDATE sessions SET pane_terminal = 'tmux' WHERE pane_id IS NOT NULL"
       );
     }
+
+    // Add session_name column
+    if (!columns.some((c) => c.name === "session_name")) {
+      db.exec("ALTER TABLE sessions ADD COLUMN session_name TEXT");
+    }
   } finally {
     db.close();
   }
@@ -53,7 +59,8 @@ export function upsertSession(
   cwd: string,
   event: HookEvent,
   toolName: string | null = null,
-  pane: PaneInfo | null = null
+  pane: PaneInfo | null = null,
+  sessionName: string | null = null
 ): void {
   const db = getDb();
   try {
@@ -61,12 +68,13 @@ export function upsertSession(
     const paneId = pane?.paneId ?? null;
     const paneTerminal = pane?.terminal ?? null;
     db.prepare(
-      `INSERT INTO sessions (session_id, cwd, event, tool_name, created_at, updated_at, state_changed_at, pane_id, pane_terminal)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO sessions (session_id, cwd, event, tool_name, session_name, created_at, updated_at, state_changed_at, pane_id, pane_terminal)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(session_id) DO UPDATE SET
          cwd = excluded.cwd,
          event = excluded.event,
          tool_name = excluded.tool_name,
+         session_name = COALESCE(excluded.session_name, sessions.session_name),
          updated_at = excluded.updated_at,
          state_changed_at = CASE
            WHEN sessions.event != excluded.event
@@ -76,7 +84,7 @@ export function upsertSession(
          END,
          pane_id = COALESCE(excluded.pane_id, sessions.pane_id),
          pane_terminal = COALESCE(excluded.pane_terminal, sessions.pane_terminal)`
-    ).run(sessionId, cwd, event, toolName, now, now, now, paneId, paneTerminal);
+    ).run(sessionId, cwd, event, toolName, sessionName, now, now, now, paneId, paneTerminal);
   } finally {
     db.close();
   }

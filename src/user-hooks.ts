@@ -7,6 +7,7 @@ export interface HookContext {
   cwd: string;
   event: HookEvent;
   toolName: string | null;
+  sessionName: string | null;
   state: SessionState | "";
   prevState: SessionState | "";
   paneId: string | null;
@@ -39,6 +40,7 @@ function buildEnv(context: HookContext): Record<string, string> {
     MONITOR_CWD: context.cwd,
     MONITOR_EVENT: context.event,
     MONITOR_TOOL_NAME: context.toolName ?? "",
+    MONITOR_SESSION_NAME: context.sessionName ?? "",
     MONITOR_STATE: context.state,
     MONITOR_PREV_STATE: context.prevState,
     MONITOR_PANE_ID: context.paneId ?? "",

@@ -8,6 +8,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     cwd: "/test/project",
     event: "SessionStart",
     tool_name: null,
+    session_name: null,
     created_at: Math.floor(Date.now() / 1000),
     updated_at: Math.floor(Date.now() / 1000),
     state_changed_at: Math.floor(Date.now() / 1000),

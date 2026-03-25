@@ -11,6 +11,7 @@ function makeContext(overrides: Partial<HookContext> = {}): HookContext {
     cwd: "/test/project",
     event: "Stop",
     toolName: null,
+    sessionName: null,
     state: "waiting_input",
     prevState: "running",
     paneId: null,
@@ -164,7 +165,7 @@ describe("fireUserHooks", () => {
         hooks: [
           {
             on_event: "PreToolUse",
-            command: `echo "$MONITOR_SESSION_ID|$MONITOR_CWD|$MONITOR_EVENT|$MONITOR_TOOL_NAME|$MONITOR_STATE|$MONITOR_PREV_STATE|$MONITOR_PANE_ID|$MONITOR_PANE_TERMINAL" > ${marker}`,
+            command: `echo "$MONITOR_SESSION_ID|$MONITOR_CWD|$MONITOR_EVENT|$MONITOR_TOOL_NAME|$MONITOR_SESSION_NAME|$MONITOR_STATE|$MONITOR_PREV_STATE|$MONITOR_PANE_ID|$MONITOR_PANE_TERMINAL" > ${marker}`,
           },
         ],
       };
@@ -175,6 +176,7 @@ describe("fireUserHooks", () => {
           sessionId: "abc-123",
           cwd: "/my/project",
           toolName: "Bash",
+          sessionName: "auth-refactor",
           state: "running",
           prevState: "waiting_input",
           paneId: "%0",
@@ -184,7 +186,7 @@ describe("fireUserHooks", () => {
       await sleep(200);
       const content = readFileSync(marker, "utf-8");
       expect(content.trim()).toBe(
-        "abc-123|/my/project|PreToolUse|Bash|running|waiting_input|%0|tmux"
+        "abc-123|/my/project|PreToolUse|Bash|auth-refactor|running|waiting_input|%0|tmux"
       );
     });
   });

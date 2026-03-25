@@ -29,6 +29,7 @@ export async function runHook(args: string[]): Promise<void> {
 
   const sessionId = data.session_id;
   const cwd = data.cwd;
+  const sessionName: string | null = data.session_name ?? null;
   const pane = detectPane();
 
   if (!sessionId) {
@@ -49,6 +50,7 @@ export async function runHook(args: string[]): Promise<void> {
         cwd: prevSession?.cwd ?? cwd ?? "",
         event: "SessionEnd",
         toolName: null,
+        sessionName: prevSession?.session_name ?? sessionName,
         state: "",
         prevState,
         paneId: prevSession?.pane_id ?? pane?.paneId ?? null,
@@ -66,7 +68,7 @@ export async function runHook(args: string[]): Promise<void> {
 
   if (UPDATE_EVENTS.includes(event)) {
     const prevSession = getSession(sessionId);
-    upsertSession(sessionId, cwd, event, toolName, pane);
+    upsertSession(sessionId, cwd, event, toolName, pane, sessionName);
 
     if (config) {
       const newSession = getSession(sessionId)!;
@@ -78,6 +80,7 @@ export async function runHook(args: string[]): Promise<void> {
         cwd,
         event,
         toolName,
+        sessionName: newSession.session_name,
         state,
         prevState,
         paneId: newSession.pane_id,

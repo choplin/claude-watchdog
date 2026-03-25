@@ -84,6 +84,7 @@ export function reconcile(ttl: number = DEFAULT_TTL): ReconcileResult {
         cwd: session.cwd,
         event: "SessionEnd",
         toolName: null,
+        sessionName: session.session_name,
         state: "",
         prevState,
         paneId: session.pane_id,
