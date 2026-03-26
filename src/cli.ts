@@ -5,10 +5,10 @@ import { runDelete } from "./commands/delete";
 import { runHook } from "./commands/hook";
 import { runReconcile } from "./commands/reconcile";
 
-const HELP = `claude-code-monitor - Monitor multiple Claude Code session states
+const HELP = `claude-watchdog - Monitor multiple Claude Code session states
 
 Usage:
-  claude-code-monitor <command> [options]
+  claude-watchdog <command> [options]
 
 Commands:
   update      Register or update a session
@@ -21,13 +21,13 @@ Options:
   --help    Show this help message
 
 Examples:
-  claude-code-monitor update --session-id abc123 --cwd /path/to/project --state running
-  claude-code-monitor list
-  claude-code-monitor list --format json
-  claude-code-monitor list --no-reconcile
-  claude-code-monitor reconcile
-  claude-code-monitor reconcile --format json
-  claude-code-monitor delete --session-id abc123
+  claude-watchdog update --session-id abc123 --cwd /path/to/project --state running
+  claude-watchdog list
+  claude-watchdog list --format json
+  claude-watchdog list --no-reconcile
+  claude-watchdog reconcile
+  claude-watchdog reconcile --format json
+  claude-watchdog delete --session-id abc123
 `;
 
 function printHelp(): void {

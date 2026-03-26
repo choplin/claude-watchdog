@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-monitor",
+  "name": "claude-watchdog",
   "version": "0.1.0",
   "description": "Monitor multiple Claude Code session states"
 }

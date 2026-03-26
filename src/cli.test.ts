@@ -376,7 +376,7 @@ describe("CLI: general", () => {
   test("shows help with --help", () => {
     const result = runCli("--help");
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("claude-code-monitor");
+    expect(result.stdout).toContain("claude-watchdog");
     expect(result.stdout).toContain("Commands:");
   });
 

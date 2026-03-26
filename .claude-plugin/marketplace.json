@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-monitor",
+  "name": "claude-watchdog",
   "owner": {
     "name": "aki"
   },
@@ -8,10 +8,10 @@
   },
   "plugins": [
     {
-      "name": "claude-code-monitor",
+      "name": "claude-watchdog",
       "source": {
         "source": "npm",
-        "package": "claude-code-monitor"
+        "package": "claude-watchdog"
       },
       "description": "Monitor multiple Claude Code session states via hooks and SQLite",
       "version": "0.1.0",
