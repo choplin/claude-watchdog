@@ -74,7 +74,7 @@ display time, not at write time.
 
 ## Database Schema
 
-Location: `~/.claude/claude-code-monitor.db` (SQLite, WAL mode)
+Location: `~/.claude/claude-watchdog.db` (SQLite, WAL mode)
 
 ```sql
 CREATE TABLE sessions (
@@ -131,8 +131,8 @@ to run when events occur or session states change.
 ### Config File
 
 Location (XDG Base Directory):
-- `$XDG_CONFIG_HOME/claude-code-monitor/config.toml`
-- Fallback: `~/.config/claude-code-monitor/config.toml`
+- `$XDG_CONFIG_HOME/claude-watchdog/config.toml`
+- Fallback: `~/.config/claude-watchdog/config.toml`
 
 Format: TOML with `[[hooks]]` array entries. Each entry has:
 - `on_event` — Fire on a specific hook event (e.g., `"Stop"`, `"SessionStart"`)
@@ -229,7 +229,7 @@ PreToolUse
 ## Directory Structure
 
 ```
-claude-code-monitor/
+claude-watchdog/
 ├── .claude-plugin/
 │   ├── plugin.json          # Plugin manifest
 │   └── marketplace.json     # Marketplace configuration (npm source)

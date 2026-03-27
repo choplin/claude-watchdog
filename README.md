@@ -1,4 +1,4 @@
-# 🖥️ claude-code-monitor
+# 🖥️ claude-watchdog
 
 > Monitor multiple Claude Code session states from a single place.
 
@@ -19,15 +19,15 @@ Hook (auto-collect)  →  SQLite DB  →  CLI (display)
 ### From Marketplace (npm)
 
 ```bash
-/plugin marketplace add owner/claude-code-monitor
-/plugin install claude-code-monitor@claude-code-monitor
+/plugin marketplace add owner/claude-watchdog
+/plugin install claude-watchdog@claude-watchdog
 ```
 
 ### From Local Path
 
 ```bash
-/plugin marketplace add ./path/to/claude-code-monitor
-/plugin install claude-code-monitor@claude-code-monitor
+/plugin marketplace add ./path/to/claude-watchdog
+/plugin install claude-watchdog@claude-watchdog
 ```
 
 ### Prerequisites
@@ -73,7 +73,7 @@ Raw events are stored in the database and interpreted into 4 states at display t
 #### `list` — Show all sessions
 
 ```bash
-claude-code-monitor list
+claude-watchdog list
 ```
 
 ```
@@ -85,13 +85,13 @@ web-app: waiting (question)
 JSON format:
 
 ```bash
-claude-code-monitor list --format json
+claude-watchdog list --format json
 ```
 
 Skip auto-reconcile (stale session cleanup):
 
 ```bash
-claude-code-monitor list --no-reconcile
+claude-watchdog list --no-reconcile
 ```
 
 #### `reconcile` — Remove stale sessions
@@ -102,8 +102,8 @@ Cleans up ghost sessions from crashed or killed Claude Code instances.
 - Sessions without a pane: removed if not updated in the last 24 hours
 
 ```bash
-claude-code-monitor reconcile
-claude-code-monitor reconcile --format json
+claude-watchdog reconcile
+claude-watchdog reconcile --format json
 ```
 
 Auto-reconcile also runs at the start of `list` (opt-out via `--no-reconcile`).
@@ -113,7 +113,7 @@ Auto-reconcile also runs at the start of `list` (opt-out via `--no-reconcile`).
 Used internally by hooks. Not intended for direct use.
 
 ```bash
-claude-code-monitor update \
+claude-watchdog update \
   --session-id <id> \
   --cwd <path> \
   --event <event> \
@@ -127,7 +127,7 @@ claude-code-monitor update \
 Used internally by hooks. Not intended for direct use.
 
 ```bash
-claude-code-monitor delete --session-id <id>
+claude-watchdog delete --session-id <id>
 ```
 
 ## 🔔 User-Defined Hooks
@@ -136,7 +136,7 @@ Execute custom shell commands when events occur or session states change — des
 
 ### Configuration
 
-Create a config file at `~/.config/claude-code-monitor/config.toml` (or `$XDG_CONFIG_HOME/claude-code-monitor/config.toml`):
+Create a config file at `~/.config/claude-watchdog/config.toml` (or `$XDG_CONFIG_HOME/claude-watchdog/config.toml`):
 
 ```toml
 # Fire on a specific event
@@ -184,4 +184,4 @@ Commands receive context via environment variables:
 
 ## 🗄️ Data Storage
 
-Session data is stored in `~/.claude/claude-code-monitor.db` (SQLite, WAL mode).
+Session data is stored in `~/.claude/claude-watchdog.db` (SQLite, WAL mode).

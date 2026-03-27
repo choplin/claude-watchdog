@@ -6,8 +6,8 @@ import type { PaneInfo } from "./terminal";
 
 function getDbPath(): string {
   return (
-    process.env.CLAUDE_CODE_MONITOR_DB ??
-    join(homedir(), ".claude", "claude-code-monitor.db")
+    process.env.CLAUDE_WATCHDOG_DB ??
+    join(homedir(), ".claude", "claude-watchdog.db")
   );
 }
 

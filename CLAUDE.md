@@ -1,4 +1,4 @@
-# claude-code-monitor
+# claude-watchdog
 
 Claude Code plugin that monitors multiple session states via hooks and SQLite.
 

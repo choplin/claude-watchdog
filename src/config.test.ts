@@ -9,7 +9,7 @@ describe("getConfigPath", () => {
     process.env.XDG_CONFIG_HOME = "/custom/config";
     try {
       expect(getConfigPath()).toBe(
-        "/custom/config/claude-code-monitor/config.toml"
+        "/custom/config/claude-watchdog/config.toml"
       );
     } finally {
       if (original !== undefined) {
@@ -25,7 +25,7 @@ describe("getConfigPath", () => {
     delete process.env.XDG_CONFIG_HOME;
     try {
       expect(getConfigPath()).toBe(
-        join(homedir(), ".config", "claude-code-monitor", "config.toml")
+        join(homedir(), ".config", "claude-watchdog", "config.toml")
       );
     } finally {
       if (original !== undefined) {

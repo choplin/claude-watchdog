@@ -37,7 +37,7 @@ const VALID_STATES: ReadonlySet<string> = new Set([
 export function getConfigPath(): string {
   const xdgConfig =
     process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
-  return join(xdgConfig, "claude-code-monitor", "config.toml");
+  return join(xdgConfig, "claude-watchdog", "config.toml");
 }
 
 export function loadConfig(): Config | null {
@@ -48,7 +48,7 @@ export function loadConfig(): Config | null {
   try {
     raw = readFileSync(configPath, "utf-8");
   } catch (e) {
-    console.error(`[claude-code-monitor] Failed to read config: ${e}`);
+    console.error(`[claude-watchdog] Failed to read config: ${e}`);
     return null;
   }
 
@@ -56,7 +56,7 @@ export function loadConfig(): Config | null {
   try {
     parsed = parse(raw) as Record<string, unknown>;
   } catch (e) {
-    console.error(`[claude-code-monitor] Failed to parse config TOML: ${e}`);
+    console.error(`[claude-watchdog] Failed to parse config TOML: ${e}`);
     return null;
   }
 
@@ -69,14 +69,14 @@ export function validateConfig(
   const rawHooks = parsed.hooks;
   if (!Array.isArray(rawHooks)) {
     if (rawHooks === undefined) return { hooks: [] };
-    console.error("[claude-code-monitor] 'hooks' must be an array");
+    console.error("[claude-watchdog] 'hooks' must be an array");
     return null;
   }
 
   const hooks: HookConfig[] = [];
   for (const [i, entry] of rawHooks.entries()) {
     if (typeof entry !== "object" || entry === null) {
-      console.error(`[claude-code-monitor] hooks[${i}]: must be an object`);
+      console.error(`[claude-watchdog] hooks[${i}]: must be an object`);
       return null;
     }
 
@@ -84,7 +84,7 @@ export function validateConfig(
 
     if (typeof h.command !== "string" || h.command.length === 0) {
       console.error(
-        `[claude-code-monitor] hooks[${i}]: 'command' is required and must be a non-empty string`
+        `[claude-watchdog] hooks[${i}]: 'command' is required and must be a non-empty string`
       );
       return null;
     }
@@ -94,14 +94,14 @@ export function validateConfig(
 
     if (hasEvent && hasStateChange) {
       console.error(
-        `[claude-code-monitor] hooks[${i}]: 'on_event' and 'on_state_change' are mutually exclusive`
+        `[claude-watchdog] hooks[${i}]: 'on_event' and 'on_state_change' are mutually exclusive`
       );
       return null;
     }
 
     if (!hasEvent && !hasStateChange) {
       console.error(
-        `[claude-code-monitor] hooks[${i}]: must have 'on_event' or 'on_state_change'`
+        `[claude-watchdog] hooks[${i}]: must have 'on_event' or 'on_state_change'`
       );
       return null;
     }
@@ -109,7 +109,7 @@ export function validateConfig(
     if (hasEvent) {
       if (typeof h.on_event !== "string" || !VALID_EVENTS.has(h.on_event)) {
         console.error(
-          `[claude-code-monitor] hooks[${i}]: invalid on_event '${h.on_event}'`
+          `[claude-watchdog] hooks[${i}]: invalid on_event '${h.on_event}'`
         );
         return null;
       }
@@ -123,7 +123,7 @@ export function validateConfig(
       const sc = h.on_state_change;
       if (typeof sc !== "object" || sc === null) {
         console.error(
-          `[claude-code-monitor] hooks[${i}]: 'on_state_change' must be an object`
+          `[claude-watchdog] hooks[${i}]: 'on_state_change' must be an object`
         );
         return null;
       }
@@ -134,13 +134,13 @@ export function validateConfig(
 
       if (from !== undefined && !VALID_STATES.has(from)) {
         console.error(
-          `[claude-code-monitor] hooks[${i}]: invalid state '${from}' in on_state_change.from`
+          `[claude-watchdog] hooks[${i}]: invalid state '${from}' in on_state_change.from`
         );
         return null;
       }
       if (to !== undefined && !VALID_STATES.has(to)) {
         console.error(
-          `[claude-code-monitor] hooks[${i}]: invalid state '${to}' in on_state_change.to`
+          `[claude-watchdog] hooks[${i}]: invalid state '${to}' in on_state_change.to`
         );
         return null;
       }

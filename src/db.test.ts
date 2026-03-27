@@ -13,7 +13,7 @@ import {
 
 const testDir = mkdtempSync(join(tmpdir(), "ccm-db-test-"));
 const testDb = join(testDir, "test.db");
-process.env.CLAUDE_CODE_MONITOR_DB = testDb;
+process.env.CLAUDE_WATCHDOG_DB = testDb;
 
 function resetDb(): void {
   try {
@@ -34,7 +34,7 @@ beforeEach(() => {
 
 afterAll(() => {
   rmSync(testDir, { recursive: true, force: true });
-  delete process.env.CLAUDE_CODE_MONITOR_DB;
+  delete process.env.CLAUDE_WATCHDOG_DB;
 });
 
 describe("initDb", () => {
