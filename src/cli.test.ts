@@ -8,9 +8,13 @@ const testDir = mkdtempSync(join(tmpdir(), "ccm-cli-test-"));
 const testDb = join(testDir, "test.db");
 const cliPath = join(import.meta.dirname, "cli.ts");
 
+// Exclude terminal pane env vars so detectPane() returns null in child processes.
+// Otherwise reconcile() tries to call terminal CLIs (e.g. wezterm) which may hang in sandbox.
+const { TMUX_PANE, WEZTERM_PANE, ...cleanEnv } = process.env;
+
 function runCli(...args: string[]) {
   const result = spawnSync("node", ["--import", "tsx/esm", cliPath, ...args], {
-    env: { ...process.env, CLAUDE_CODE_MONITOR_DB: testDb },
+    env: { ...cleanEnv, CLAUDE_WATCHDOG_DB: testDb },
   });
   return {
     stdout: result.stdout?.toString().trim() ?? "",
@@ -305,7 +309,7 @@ describe("CLI: hook", () => {
     if (toolName) args.push(toolName);
     const result = spawnSync("node", args, {
       input: JSON.stringify(payload),
-      env: { ...process.env, CLAUDE_CODE_MONITOR_DB: testDb },
+      env: { ...cleanEnv, CLAUDE_WATCHDOG_DB: testDb },
     });
     return {
       stdout: result.stdout?.toString().trim() ?? "",

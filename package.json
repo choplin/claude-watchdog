@@ -9,7 +9,7 @@
   "scripts": {
     "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' --external:better-sqlite3 --external:cli-table3 --external:smol-toml",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude '.direnv/**'",
     "dev": "tsx src/cli.ts"
   },
   "devDependencies": {
