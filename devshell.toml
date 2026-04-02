@@ -1,3 +1,7 @@
 [devshell]
 name = "claude-watchdog"
-packages = ["nodejs_22", "typescript-language-server", "biome"]
+packages = ["nodejs"]
+
+[[env]]
+name = "PATH"
+prefix = "$HOME/.moon/bin"

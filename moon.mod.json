@@ -1,0 +1,18 @@
+{
+  "name": "choplin/claude_watchdog",
+  "version": "0.1.0",
+  "deps": {
+    "moonbit-community/sqlite3": "0.1.5"
+  },
+  "readme": "README.md",
+  "repository": "https://github.com/anthropics/claude-watchdog",
+  "license": "MIT",
+  "keywords": [
+    "claude",
+    "watchdog",
+    "monitor"
+  ],
+  "description": "Monitor multiple Claude Code session states",
+  "source": ".",
+  "preferred-target": "native"
+}

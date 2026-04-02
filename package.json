@@ -2,27 +2,14 @@
   "name": "claude-watchdog",
   "version": "0.1.0",
   "description": "Monitor multiple Claude Code session states",
-  "type": "module",
   "bin": {
-    "claude-watchdog": "./dist/cli.js"
+    "claude-watchdog": "./dist/bin/claude-watchdog"
   },
+  "files": [
+    "dist/"
+  ],
   "scripts": {
-    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' --external:better-sqlite3 --external:cli-table3 --external:smol-toml",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run --exclude '.direnv/**'",
-    "dev": "tsx src/cli.ts"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.15.0",
-    "esbuild": "^0.25.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.9.3",
-    "vitest": "^3.1.0"
-  },
-  "dependencies": {
-    "better-sqlite3": "^11.8.0",
-    "cli-table3": "^0.6.5",
-    "smol-toml": "^1.6.0"
+    "build": "moon build --target native && node scripts/copy-binary.js",
+    "test": "moon test --target native"
   }
 }

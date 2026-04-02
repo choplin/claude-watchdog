@@ -1,5 +1,5 @@
 {
-  description = "Bun development shell using devshell and flake-parts";
+  description = "claude-watchdog development shell";
 
   inputs = {
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0";

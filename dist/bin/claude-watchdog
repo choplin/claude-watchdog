@@ -1,0 +1,34 @@
+#!/bin/sh
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+ARCH="$(uname -m)"
+case "$ARCH" in
+  arm64|aarch64) ARCH="aarch64" ;;
+  x86_64)        ARCH="x86_64" ;;
+  *)
+    echo "Unsupported architecture: $ARCH" >&2
+    exit 1
+    ;;
+esac
+
+OS="$(uname -s)"
+case "$OS" in
+  Darwin) OS="darwin" ;;
+  Linux)  OS="linux" ;;
+  *)
+    echo "Unsupported OS: $OS" >&2
+    exit 1
+    ;;
+esac
+
+BIN="$SCRIPT_DIR/../artifacts/claude-watchdog-${ARCH}-${OS}"
+
+if [ ! -x "$BIN" ]; then
+  echo "Binary not found: $BIN" >&2
+  echo "Run 'npm run build' to build for your platform." >&2
+  exit 1
+fi
+
+exec "$BIN" "$@"

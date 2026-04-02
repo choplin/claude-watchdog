@@ -1,14 +1,13 @@
 # claude-watchdog
 
-Claude Code plugin that monitors multiple session states via hooks and SQLite.
+Claude Code plugin that monitors multiple session states via hooks and SQLite. Written in MoonBit (native backend).
 
 ## Key Resources
 
 - Architecture: [docs/architecture.md](docs/architecture.md)
 - Hook config: [hooks/hooks.json](hooks/hooks.json)
-- CLI entry point: [src/cli.ts](src/cli.ts)
-- State interpretation: [src/interpret.ts](src/interpret.ts)
-- User-defined hooks: [src/config.ts](src/config.ts), [src/user-hooks.ts](src/user-hooks.ts)
+- CLI entry point: [cmd/main/main.mbt](cmd/main/main.mbt)
+- Library packages: [lib/](lib/)
 
 ## Guidelines
 
@@ -18,14 +17,18 @@ Claude Code plugin that monitors multiple session states via hooks and SQLite.
 
 ```bash
 # Build
-npm run build
-
-# Type check
-npm run typecheck
+moon build --target native
+cp _build/native/debug/build/cmd/main/main.exe dist/claude-watchdog
 
 # Test
-npm test
+moon test --target native
 
 # Run CLI (dev)
-npx tsx src/cli.ts <command>
+moon run cmd/main -- <command>
+
+# Format
+moon fmt
+
+# Type check
+moon check --target native
 ```

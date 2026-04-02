@@ -1,0 +1,4 @@
+import {
+  "choplin/claude_watchdog/lib/config",
+  "choplin/claude_watchdog/lib/ffi",
+}

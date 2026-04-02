@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/env",
+}
+
+options(
+  "native-stub": [ "stub.c" ],
+  targets: { "ffi.mbt": [ "native" ] },
+)

@@ -26,29 +26,31 @@ The system has four layers:
 
 ## Build & Distribution
 
-The project uses **esbuild** to bundle `src/cli.ts` into `dist/cli.js`. The bundle runs on **Node.js** (no Bun dependency). Native modules (`better-sqlite3`, `cli-table3`, `smol-toml`) are marked as external and resolved from `node_modules` at runtime.
+The project is written in **MoonBit** targeting the **native backend** (MoonBit → C → gcc/clang). SQLite is provided by the `moonbit-community/sqlite3` package which vendors SQLite 3.49.1 as an amalgamation source.
 
 ```
-npm run build  →  esbuild  →  dist/cli.js (Node.js ESM bundle)
+moon build --target native  →  _build/native/debug/build/cmd/main/main.exe
+cp ... dist/claude-watchdog →  dist/claude-watchdog (native binary)
 ```
 
-Distribution is via **npm**. The `bin` field in `package.json` points to `dist/cli.js`, and the Marketplace configuration uses npm as the source.
+Distribution is via **npm**. The `bin` field in `package.json` points to `dist/claude-watchdog`.
 
 ## Data Flow
 
 ```
 Claude Code emits event
-  → hooks/hooks.json routes to `node dist/cli.js hook <event>`
-    → cli.ts `hook` subcommand reads stdin, calls db directly
-      → src/db.ts upserts raw event into SQLite
-        → src/config.ts loads user config (if exists)
-          → src/user-hooks.ts fires matching user-defined hooks
+  → hooks/hooks.json routes to `dist/claude-watchdog hook <event>`
+    → cmd/main/main.mbt dispatches to hook command
+      → lib/commands/hook.mbt reads stdin JSON, calls db
+        → lib/db/db.mbt upserts raw event into SQLite
+          → lib/config/config.mbt loads user config (if exists)
+            → lib/userhooks/userhooks.mbt fires matching user-defined hooks
 
 User runs CLI (or slash command)
-  → node dist/cli.js <command>
-    → cli.ts dispatches to command handler
-      → src/db.ts reads sessions from SQLite
-        → src/interpret.ts maps raw event to display state
+  → dist/claude-watchdog <command>
+    → cmd/main/main.mbt dispatches to command handler
+      → lib/db/db.mbt reads sessions from SQLite
+        → lib/interpret/interpret.mbt maps raw event to display state
           → output to stdout
 ```
 
@@ -56,10 +58,10 @@ User runs CLI (or slash command)
 
 | Step | Component | File |
 |------|-----------|------|
-| Event received | Hook subcommand | `src/commands/hook.ts` |
-| Data persisted | Database layer | `src/db.ts` |
-| State interpreted | Interpretation | `src/interpret.ts` |
-| Output displayed | CLI commands | `src/commands/*.ts` |
+| Event received | Hook subcommand | `lib/commands/hook.mbt` |
+| Data persisted | Database layer | `lib/db/db.mbt` |
+| State interpreted | Interpretation | `lib/interpret/interpret.mbt` |
+| Output displayed | CLI commands | `lib/commands/*.mbt` |
 
 ## Late Interpretation
 
@@ -82,6 +84,7 @@ CREATE TABLE sessions (
   cwd           TEXT NOT NULL,
   event         TEXT NOT NULL,
   tool_name     TEXT,
+  session_name  TEXT,
   created_at    INTEGER NOT NULL,
   updated_at    INTEGER NOT NULL,
   state_changed_at INTEGER NOT NULL,
@@ -96,6 +99,7 @@ CREATE TABLE sessions (
 | `cwd` | Working directory of the session |
 | `event` | Last hook event name |
 | `tool_name` | Tool name for `PreToolUse` events, NULL otherwise |
+| `session_name` | User-provided session name, NULL if not set |
 | `created_at` | Unix timestamp of session creation (immutable after INSERT) |
 | `updated_at` | Unix timestamp of last update |
 | `state_changed_at` | Unix timestamp of last state change |
@@ -103,6 +107,15 @@ CREATE TABLE sessions (
 | `pane_terminal` | Terminal type (e.g., `tmux`, `wez`), NULL if not in a multiplexer |
 
 Each session has exactly one row. New events overwrite the previous row via UPSERT.
+
+### NULL Handling
+
+The `moonbit-community/sqlite3` package does not expose a NULL binding/reading API. The MoonBit implementation uses:
+
+- **Write**: `NULLIF(?, '')` — bind empty string `""`, SQL converts to NULL
+- **Read**: `COALESCE(column, '')` — NULL becomes empty string
+- **MoonBit side**: `String` fields with `""` representing absent values
+- **JSON output**: Custom serializer emits `null` for `""` fields
 
 ## Hook Events
 
@@ -117,15 +130,15 @@ Configured in `hooks/hooks.json`:
 | `PreToolUse` | `ExitPlanMode` | Upsert session with tool_name |
 | `Stop` | — | Upsert session |
 
-All hooks go through `node dist/cli.js hook <event>`. The `hook` subcommand
-reads stdin JSON, extracts `session_id` and `cwd`, and calls `upsertSession`/
-`deleteSession` directly (no subprocess spawning).
+All hooks go through `dist/claude-watchdog hook <event>`. The `hook` subcommand
+reads stdin JSON, extracts `session_id` and `cwd`, and calls `upsert_session`/
+`delete_session` directly.
 
 Errors are silently caught to never block Claude Code.
 
 ## User-Defined Hooks
 
-Defined in `src/config.ts` and `src/user-hooks.ts`. Users can configure shell commands
+Defined in `lib/config/` and `lib/userhooks/`. Users can configure shell commands
 to run when events occur or session states change.
 
 ### Config File
@@ -152,6 +165,7 @@ Commands receive context via `MONITOR_`-prefixed environment variables:
 | `MONITOR_CWD` | Working directory |
 | `MONITOR_EVENT` | Hook event name |
 | `MONITOR_TOOL_NAME` | Tool name (PreToolUse only, empty otherwise) |
+| `MONITOR_SESSION_NAME` | Session name (if set) |
 | `MONITOR_STATE` | Current interpreted state (empty for SessionEnd) |
 | `MONITOR_PREV_STATE` | Previous state (empty for new sessions) |
 | `MONITOR_PANE_ID` | Terminal pane ID (if available) |
@@ -159,30 +173,24 @@ Commands receive context via `MONITOR_`-prefixed environment variables:
 
 ### Execution
 
-Hook commands are spawned via `/bin/sh -c` with `stdio` set to `"ignore"`.
-Processes are detached and `.unref()`-ed so they don't block the monitor. All errors
-are silently caught to never interfere with Claude Code operation.
+Hook commands are spawned as detached background processes via `fork()` + `exec()`.
+The child process sets environment variables via `setenv()`, redirects stdio to
+`/dev/null`, and creates a new session with `setsid()`. The parent process does not
+wait for the child. All errors are silently caught to never interfere with Claude Code operation.
 
 ## Terminal Detection
 
-Defined in `src/terminal.ts`. A pluggable detector system identifies the terminal
-multiplexer environment. Each detector checks an environment variable and returns
-a `PaneInfo` (terminal type + pane ID). First match wins.
+Defined in `lib/terminal/terminal.mbt`. Detects the terminal multiplexer environment
+by checking environment variables. First match wins (tmux has priority).
 
-| Terminal | Env Variable | `terminal` | Example `paneId` |
+| Terminal | Env Variable | `terminal` | Example `pane_id` |
 |----------|-------------|------------|-------------------|
 | tmux | `TMUX_PANE` | `tmux` | `%0` |
 | WezTerm | `WEZTERM_PANE` | `wez` | `3` |
 
-To add a new terminal, append a detector function to the `detectors` array in
-`src/terminal.ts`.
-
-The PANE column in `list` output displays `terminal:paneId` (e.g., `tmux:%0`, `wez:3`)
-or `-` when no multiplexer is detected.
-
 ## Reconcile (Stale Session Cleanup)
 
-Defined in `src/reconcile.ts`. Removes sessions that persist after Claude Code crashes
+Defined in `lib/reconcile/reconcile.mbt`. Removes sessions that persist after Claude Code crashes
 or is killed without sending `SessionEnd`.
 
 ### Strategy: Hybrid (Pane Check + TTL)
@@ -193,13 +201,13 @@ or is killed without sending `SessionEnd`.
 
 ### Pane Existence Checks
 
-| Terminal | Command | Timeout | Parse |
-|----------|---------|---------|-------|
-| tmux | `tmux list-panes -a -F '#{pane_id}'` | 3s | Set of lines |
-| wez | `wezterm cli list --format json` | 5s | Set of `String(pane_id)` |
+| Terminal | Command | Parse |
+|----------|---------|-------|
+| tmux | `tmux list-panes -a -F '#{pane_id}'` | Set of lines |
+| wez | `wezterm cli list --format json` | Set of `pane_id` from JSON |
 
-Uses `execFileSync` with timeout. Results are cached per terminal type within a single
-reconcile call, so each terminal CLI runs at most once.
+Results are cached per terminal type within a single reconcile call, so each
+terminal CLI runs at most once.
 
 ### Timing
 
@@ -209,13 +217,13 @@ reconcile call, so each terminal CLI runs at most once.
 ### Stale Session Handling
 
 For each stale session:
-1. Capture `prevState` via `interpretState(session)`
-2. Call `deleteSession(session.session_id)`
-3. Fire user hooks with `SessionEnd` context (same pattern as `src/commands/hook.ts`)
+1. Capture `prev_state` via `interpret_state(session)`
+2. Call `delete_session(session.session_id)`
+3. Fire user hooks with `SessionEnd` context
 
 ## Session State Machine
 
-Defined in `src/interpret.ts`. The interpretation maps raw events to display states:
+Defined in `lib/interpret/interpret.mbt`. The interpretation maps raw events to display states:
 
 ```
 SessionStart ──────────▶ waiting (input)
@@ -225,6 +233,27 @@ PreToolUse
   ├─ AskUserQuestion ──▶ waiting (question)
   └─ ExitPlanMode ─────▶ waiting (approval)
 ```
+
+## C FFI Layer
+
+Defined in `lib/ffi/`. MoonBit's native backend compiles to C, allowing direct
+interop with C functions. The FFI layer provides system primitives not available
+in MoonBit's standard library:
+
+| Function | Purpose |
+|----------|---------|
+| `read_stdin` | Read all of stdin |
+| `read_file` | Read entire file contents |
+| `popen` | Run command, capture stdout |
+| `spawn_detached` | Fire-and-forget background process |
+| `isatty` | Check if fd is a terminal |
+| `eprintln` | Write to stderr |
+| `exit` | Exit process with code |
+| `home_dir` | Get user home directory |
+| `now_unix` | Current unix timestamp in seconds |
+
+String conversion between MoonBit (UTF-16) and C (UTF-8) uses `@utf8.encode()`
+and `@utf8.decode_lossy()` from the standard library.
 
 ## Directory Structure
 
@@ -236,24 +265,22 @@ claude-watchdog/
 ├── commands/
 │   └── monitor-list.md      # /monitor-list slash command
 ├── dist/
-│   └── cli.js               # esbuild bundle (gitignored, built via npm run build)
+│   └── claude-watchdog      # Native binary (gitignored, built via moon build)
 ├── hooks/
 │   └── hooks.json           # Hook event configuration
-├── src/
-│   ├── cli.ts               # CLI entry point
-│   ├── config.ts            # User config loading (XDG, TOML)
-│   ├── db.ts                # Database operations (better-sqlite3)
-│   ├── interpret.ts         # State interpretation logic
-│   ├── reconcile.ts         # Stale session cleanup (pane check + TTL)
-│   ├── terminal.ts          # Terminal pane detection
-│   ├── types.ts             # Type definitions
-│   ├── user-hooks.ts        # User-defined hook matching + execution
-│   └── commands/
-│       ├── delete.ts        # `delete` command
-│       ├── hook.ts          # `hook` command (stdin-based, used by hooks)
-│       ├── list.ts          # `list` command
-│       ├── reconcile.ts     # `reconcile` command
-│       └── update.ts        # `update` command
-├── package.json
-└── tsconfig.json
+├── lib/
+│   ├── ffi/                 # C FFI bindings (stub.c + ffi.mbt)
+│   ├── types/               # HookEvent, SessionState, Session, PaneInfo
+│   ├── db/                  # SQLite CRUD operations
+│   ├── interpret/           # State interpretation + elapsed formatting
+│   ├── terminal/            # Terminal multiplexer detection
+│   ├── config/              # TOML config parsing + validation
+│   ├── userhooks/           # User-defined hook matching + execution
+│   ├── reconcile/           # Stale session cleanup
+│   └── commands/            # CLI command handlers (hook, list, update, delete, reconcile)
+├── cmd/
+│   └── main/
+│       └── main.mbt         # CLI entry point / dispatcher
+├── moon.mod.json            # MoonBit module configuration
+└── package.json             # npm distribution configuration
 ```
