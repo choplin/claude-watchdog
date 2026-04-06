@@ -7,6 +7,8 @@ import {
   "choplin/claude_watchdog/lib/userhooks",
   "choplin/claude_watchdog/lib/reconcile",
   "choplin/claude_watchdog/lib/ffi",
+  "choplin/claude_watchdog/lib/cli",
+  "moonbitlang/core/argparse",
   "moonbitlang/core/cmp",
   "moonbitlang/core/json",
 }

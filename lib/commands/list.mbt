@@ -1,33 +1,9 @@
 ///|
 /// List all active sessions.
-pub fn run_list(args : Array[String]) -> Unit {
-  let mut format = "text"
-  let mut color_mode = "auto"
-  let mut no_reconcile = false
-  // Parse flags
-  for i = 0; i < args.length(); {
-    match args[i] {
-      "--format" => {
-        if i + 1 < args.length() {
-          format = args[i + 1]
-          continue i + 2
-        }
-        continue i + 1
-      }
-      "--color" => {
-        if i + 1 < args.length() {
-          color_mode = args[i + 1]
-          continue i + 2
-        }
-        continue i + 1
-      }
-      "--no-reconcile" => {
-        no_reconcile = true
-        continue i + 1
-      }
-      _ => continue i + 1
-    }
-  }
+pub fn run_list(matches : @argparse.Matches) -> Unit {
+  let format = @cli.get_one(matches, "format")
+  let color_mode = @cli.get_one(matches, "color")
+  let no_reconcile = @cli.get_flag(matches, "no-reconcile")
   // Init DB
   let init_result : Result[_, _] = try? @db.init_db()
   match init_result {

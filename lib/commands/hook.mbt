@@ -1,14 +1,9 @@
 ///|
 /// Handle hook events from Claude Code.
-/// args[0] = event name, args[1] = optional tool name
 /// Reads JSON from stdin: { "session_id": "...", "cwd": "...", "session_name": "..." }
-pub fn run_hook(args : Array[String]) -> Unit {
-  if args.is_empty() {
-    @ffi.eprintln("Error: hook requires event argument")
-    @ffi.exit(1)
-  }
-  let event_str = args[0]
-  let tool_name = if args.length() > 1 { args[1] } else { "" }
+pub fn run_hook(matches : @argparse.Matches) -> Unit {
+  let event_str = @cli.get_one(matches, "event")
+  let tool_name = @cli.get_one(matches, "tool-name")
   // Read JSON from stdin
   let input = @ffi.read_stdin()
   let json_result : Result[Json, _] = try? @json.parse(input)

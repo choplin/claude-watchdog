@@ -1,18 +1,7 @@
 ///|
 /// Manually trigger stale session cleanup.
-pub fn run_reconcile(args : Array[String]) -> Unit {
-  let mut format = "text"
-  for i = 0; i < args.length(); {
-    match args[i] {
-      "--format" => {
-        if i + 1 < args.length() {
-          format = args[i + 1]
-        }
-        continue i + 2
-      }
-      _ => continue i + 1
-    }
-  }
+pub fn run_reconcile(matches : @argparse.Matches) -> Unit {
+  let format = @cli.get_one(matches, "format")
   let init_result : Result[_, _] = try? @db.init_db()
   match init_result {
     Err(e) => {
