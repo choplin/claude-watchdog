@@ -1,26 +1,26 @@
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/dist/bin/claude-watchdog hook SessionStart" }] }
+      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/claude-watchdog hook SessionStart" }] }
     ],
     "SessionEnd": [
-      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/dist/bin/claude-watchdog hook SessionEnd" }] }
+      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/claude-watchdog hook SessionEnd" }] }
     ],
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/dist/bin/claude-watchdog hook UserPromptSubmit" }] }
+      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/claude-watchdog hook UserPromptSubmit" }] }
     ],
     "PreToolUse": [
       {
         "matcher": "AskUserQuestion",
-        "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/dist/bin/claude-watchdog hook PreToolUse AskUserQuestion" }]
+        "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/claude-watchdog hook PreToolUse AskUserQuestion" }]
       },
       {
         "matcher": "ExitPlanMode",
-        "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/dist/bin/claude-watchdog hook PreToolUse ExitPlanMode" }]
+        "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/claude-watchdog hook PreToolUse ExitPlanMode" }]
       }
     ],
     "Stop": [
-      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/dist/bin/claude-watchdog hook Stop" }] }
+      { "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/bin/claude-watchdog hook Stop" }] }
     ]
   }
 }
