@@ -12,6 +12,13 @@ Claude Code plugin that monitors multiple session states via hooks and SQLite. W
 ## Guidelines
 
 - When adding a new feature, update the relevant documentation (README.md, docs/architecture.md)
+- Always use MoonBit skills when working with MoonBit code:
+  - `moonbit:moonbit-lang` — Language reference and coding conventions
+  - `moonbit:moonbit-agent-guide-dev` — Project workflow, testing, and `moon` CLI usage
+  - `moonbit:moonbit-refactoring` — Idiomatic refactoring patterns
+  - `moonbit:moonbit-c-binding` — C FFI bindings
+  - `moonbit:moonbit-spec-test-development` — Spec-driven development
+  - `moonbit:moonbit-extract-spec-test` — Extract specs and tests from existing code
 
 ## Commands
 
