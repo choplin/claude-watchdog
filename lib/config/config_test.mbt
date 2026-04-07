@@ -30,6 +30,8 @@ test "parse_toml_hooks: state change hook" {
   guard result is Some(hooks) else { fail("expected Some") }
   inspect(hooks.length(), content="1")
   inspect(hooks[0]["command"], content="notify-send")
+  inspect(hooks[0]["on_state_change.from"], content="running")
+  inspect(hooks[0]["on_state_change.to"], content="waiting_input")
 }
 
 ///|
@@ -49,19 +51,27 @@ test "parse_toml_hooks: multiple hooks" {
 }
 
 ///|
-test "parse_inline_table" {
-  let result = @config.parse_inline_table(
-    "{ from = \"running\", to = \"waiting_input\" }",
-  )
-  guard result is Some(table) else { fail("expected Some") }
-  inspect(table["from"], content="running")
-  inspect(table["to"], content="waiting_input")
+test "parse_toml_hooks: escaped double quotes in command" {
+  let toml =
+    #|[[hooks]]
+    #|on_event = "Stop"
+    #|command = "osascript -e 'display notification \"Stop\" with title \"Claude Code \"'"
+    #|
+  let result = @config.parse_toml_hooks(toml)
+  guard result is Some(hooks) else { fail("expected Some") }
+  let expected =
+    #|osascript -e 'display notification "Stop" with title "Claude Code "'
+  inspect(hooks[0]["command"], content=expected)
 }
 
 ///|
-test "parse_inline_table: partial" {
-  let result = @config.parse_inline_table("{ to = \"running\" }")
-  guard result is Some(table) else { fail("expected Some") }
-  inspect(table.contains("from"), content="false")
-  inspect(table["to"], content="running")
+test "parse_toml_hooks: escaped backslash in command" {
+  let toml =
+    #|[[hooks]]
+    #|on_event = "Stop"
+    #|command = "echo hello\\world"
+    #|
+  let result = @config.parse_toml_hooks(toml)
+  guard result is Some(hooks) else { fail("expected Some") }
+  inspect(hooks[0]["command"], content="echo hello\\world")
 }

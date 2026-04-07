@@ -68,7 +68,9 @@ fn validate_config(raw_hooks : Array[Map[String, String]]) -> Config? {
         }
     }
     let has_on_event = raw.contains("on_event")
-    let has_on_state_change = raw.contains("on_state_change")
+    // Inline tables are flattened to dotted keys (e.g. "on_state_change.from")
+    let has_on_state_change = raw.contains("on_state_change.from") ||
+      raw.contains("on_state_change.to")
     // Must have exactly one trigger
     if has_on_event && has_on_state_change {
       @ffi.eprintln(
@@ -94,37 +96,27 @@ fn validate_config(raw_hooks : Array[Map[String, String]]) -> Config? {
         command: command.unwrap(),
       })
     } else {
-      // on_state_change — parse inline table
-      let sc_raw = raw["on_state_change"]
-      match parse_inline_table(sc_raw) {
-        None => {
-          @ffi.eprintln("Error: invalid on_state_change format")
-          return None
-        }
-        Some(table) => {
-          let from = match table.get("from") {
-            Some(v) => v
-            None => ""
-          }
-          let to = match table.get("to") {
-            Some(v) => v
-            None => ""
-          }
-          if from != "" && !@types.is_valid_state(from) {
-            @ffi.eprintln("Error: invalid state '\{from}'")
-            return None
-          }
-          if to != "" && !@types.is_valid_state(to) {
-            @ffi.eprintln("Error: invalid state '\{to}'")
-            return None
-          }
-          hooks.push(HookConfig::{
-            on_event: "",
-            on_state_change: Some(StateChangePattern::{ from, to }),
-            command: command.unwrap(),
-          })
-        }
+      let from = match raw.get("on_state_change.from") {
+        Some(v) => v
+        None => ""
       }
+      let to = match raw.get("on_state_change.to") {
+        Some(v) => v
+        None => ""
+      }
+      if from != "" && !@types.is_valid_state(from) {
+        @ffi.eprintln("Error: invalid state '\{from}'")
+        return None
+      }
+      if to != "" && !@types.is_valid_state(to) {
+        @ffi.eprintln("Error: invalid state '\{to}'")
+        return None
+      }
+      hooks.push(HookConfig::{
+        on_event: "",
+        on_state_change: Some(StateChangePattern::{ from, to }),
+        command: command.unwrap(),
+      })
     }
   }
   Some(Config::{ hooks, })
