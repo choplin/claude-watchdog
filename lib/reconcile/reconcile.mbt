@@ -72,6 +72,27 @@ fn is_stale(
 }
 
 ///|
+/// Find duplicate sessions on the same pane.
+/// Sessions are expected in updated_at DESC order; first seen per pane wins.
+/// Returns a set of session IDs that are duplicates (older entries).
+fn find_pane_duplicates(sessions : Array[@session.Session]) -> Map[String, Unit] {
+  let seen : Map[String, Unit] = {}
+  let dupes : Map[String, Unit] = {}
+  for session in sessions {
+    if session.pane_id == "" || session.pane_terminal == "" {
+      continue
+    }
+    let key = session.pane_terminal + ":" + session.pane_id
+    if seen.contains(key) {
+      dupes[session.session_id] = ()
+    } else {
+      seen[key] = ()
+    }
+  }
+  dupes
+}
+
+///|
 /// Remove stale sessions. Returns list of deleted session IDs.
 pub fn reconcile(ttl : Int64) -> Array[String] {
   let deleted : Array[String] = []
@@ -85,9 +106,11 @@ pub fn reconcile(ttl : Int64) -> Array[String] {
   }
   let now = @ffi.now_unix()
   let pane_cache : Map[String, Map[String, Unit]?] = {}
+  let pane_dupes = find_pane_duplicates(sessions)
   let cfg = @config.load_config()
   for session in sessions {
-    if is_stale(session, pane_cache, ttl, now) {
+    if pane_dupes.contains(session.session_id) ||
+      is_stale(session, pane_cache, ttl, now) {
       let prev_state = @interpret.interpret_state(session)
       let del_result : Result[Bool, _] = try? @db.delete_session(
         session.session_id,
