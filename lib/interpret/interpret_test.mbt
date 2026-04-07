@@ -1,9 +1,9 @@
 ///|
 fn make_session(
-  event? : String = "SessionStart",
+  event? : @session.HookEvent = SessionStart,
   tool_name? : String = "",
-) -> @types.Session {
-  @types.Session::{
+) -> @session.Session {
+  @session.Session::{
     session_id: "test-session",
     cwd: "/test/project",
     event,
@@ -20,7 +20,7 @@ fn make_session(
 ///|
 test "interpret_state: SessionStart -> WaitingInput" {
   inspect(
-    @interpret.interpret_state(make_session(event="SessionStart")),
+    @interpret.interpret_state(make_session(event=SessionStart)),
     content="WaitingInput",
   )
 }
@@ -28,7 +28,7 @@ test "interpret_state: SessionStart -> WaitingInput" {
 ///|
 test "interpret_state: Stop -> WaitingInput" {
   inspect(
-    @interpret.interpret_state(make_session(event="Stop")),
+    @interpret.interpret_state(make_session(event=Stop)),
     content="WaitingInput",
   )
 }
@@ -36,7 +36,7 @@ test "interpret_state: Stop -> WaitingInput" {
 ///|
 test "interpret_state: UserPromptSubmit -> Running" {
   inspect(
-    @interpret.interpret_state(make_session(event="UserPromptSubmit")),
+    @interpret.interpret_state(make_session(event=UserPromptSubmit)),
     content="Running",
   )
 }
@@ -45,7 +45,7 @@ test "interpret_state: UserPromptSubmit -> Running" {
 test "interpret_state: PreToolUse + AskUserQuestion -> WaitingQuestion" {
   inspect(
     @interpret.interpret_state(
-      make_session(event="PreToolUse", tool_name="AskUserQuestion"),
+      make_session(event=PreToolUse, tool_name="AskUserQuestion"),
     ),
     content="WaitingQuestion",
   )
@@ -55,7 +55,7 @@ test "interpret_state: PreToolUse + AskUserQuestion -> WaitingQuestion" {
 test "interpret_state: PreToolUse + ExitPlanMode -> WaitingApproval" {
   inspect(
     @interpret.interpret_state(
-      make_session(event="PreToolUse", tool_name="ExitPlanMode"),
+      make_session(event=PreToolUse, tool_name="ExitPlanMode"),
     ),
     content="WaitingApproval",
   )
@@ -65,7 +65,7 @@ test "interpret_state: PreToolUse + ExitPlanMode -> WaitingApproval" {
 test "interpret_state: PreToolUse + other tool -> Running" {
   inspect(
     @interpret.interpret_state(
-      make_session(event="PreToolUse", tool_name="Bash"),
+      make_session(event=PreToolUse, tool_name="Bash"),
     ),
     content="Running",
   )
@@ -74,15 +74,15 @@ test "interpret_state: PreToolUse + other tool -> Running" {
 ///|
 test "interpret_state: PreToolUse + empty tool -> Running" {
   inspect(
-    @interpret.interpret_state(make_session(event="PreToolUse")),
+    @interpret.interpret_state(make_session(event=PreToolUse)),
     content="Running",
   )
 }
 
 ///|
-test "interpret_state: unknown event -> WaitingInput" {
+test "interpret_state: SessionEnd -> WaitingInput" {
   inspect(
-    @interpret.interpret_state(make_session(event="Unknown")),
+    @interpret.interpret_state(make_session(event=SessionEnd)),
     content="WaitingInput",
   )
 }
@@ -90,18 +90,18 @@ test "interpret_state: unknown event -> WaitingInput" {
 ///|
 test "format_state" {
   inspect(
-    @interpret.format_state(@types.WaitingInput),
+    @interpret.format_state(@session.WaitingInput),
     content="waiting (input)",
   )
   inspect(
-    @interpret.format_state(@types.WaitingQuestion),
+    @interpret.format_state(@session.WaitingQuestion),
     content="waiting (question)",
   )
   inspect(
-    @interpret.format_state(@types.WaitingApproval),
+    @interpret.format_state(@session.WaitingApproval),
     content="waiting (approval)",
   )
-  inspect(@interpret.format_state(@types.Running), content="running")
+  inspect(@interpret.format_state(@session.Running), content="running")
 }
 
 ///|

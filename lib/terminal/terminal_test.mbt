@@ -88,10 +88,10 @@ test "pane_column_header: no panes" {
 ///|
 test "pane_column_header: tmux only" {
   let sessions = [
-    @types.Session::{
+    @session.Session::{
       session_id: "s1",
       cwd: "/tmp",
-      event: "SessionStart",
+      event: SessionStart,
       tool_name: "",
       session_name: "",
       created_at: 0L,
@@ -107,10 +107,10 @@ test "pane_column_header: tmux only" {
 ///|
 test "pane_column_header: mixed" {
   let sessions = [
-    @types.Session::{
+    @session.Session::{
       session_id: "s1",
       cwd: "/tmp",
-      event: "SessionStart",
+      event: SessionStart,
       tool_name: "",
       session_name: "",
       created_at: 0L,
@@ -119,10 +119,10 @@ test "pane_column_header: mixed" {
       pane_id: "%0",
       pane_terminal: "tmux",
     },
-    @types.Session::{
+    @session.Session::{
       session_id: "s2",
       cwd: "/tmp",
-      event: "SessionStart",
+      event: SessionStart,
       tool_name: "",
       session_name: "",
       created_at: 0L,

@@ -3,26 +3,27 @@
 pub fn run_update(matches : @argparse.Matches) -> Unit {
   let session_id = @cli.get_one(matches, "session-id")
   let cwd = @cli.get_one(matches, "cwd")
-  let event = @cli.get_one(matches, "event")
+  let event_str = @cli.get_one(matches, "event")
   let tool_name = @cli.get_one(matches, "tool-name")
   let session_name = @cli.get_one(matches, "session-name")
   let pane_id = @cli.get_one(matches, "pane-id")
   let pane_terminal = @cli.get_one(matches, "pane-terminal")
-  // Validate event is an update event
-  match @types.HookEvent::from_string(event) {
+  // Parse and validate event at the boundary
+  let event = match @session.HookEvent::from_string(event_str) {
     None => {
-      @ffi.eprintln("Error: invalid event '\{event}'")
+      @ffi.eprintln("Error: invalid event '\{event_str}'")
       @ffi.exit(1)
+      return // unreachable
     }
-    Some(e) =>
-      if !e.is_update_event() {
-        @ffi.eprintln("Error: event '\{event}' is not a valid update event")
-        @ffi.exit(1)
-      }
+    Some(e) => e
+  }
+  if !event.is_update_event() {
+    @ffi.eprintln("Error: event '\{event_str}' is not a valid update event")
+    @ffi.exit(1)
   }
   // Build pane info
-  let pane : @types.PaneInfo? = if pane_id != "" && pane_terminal != "" {
-    Some(@types.PaneInfo::{ terminal: pane_terminal, pane_id })
+  let pane : @terminal.PaneInfo? = if pane_id != "" && pane_terminal != "" {
+    Some(@terminal.PaneInfo::{ terminal: pane_terminal, pane_id })
   } else {
     None
   }

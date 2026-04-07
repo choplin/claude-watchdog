@@ -115,9 +115,9 @@ fn run_migrations(conn : @sqlite3.Connection) -> Unit raise {
 pub fn upsert_session(
   session_id : String,
   cwd : String,
-  event : String,
+  event : @session.HookEvent,
   tool_name : String,
-  pane : @types.PaneInfo?,
+  pane : @terminal.PaneInfo?,
   session_name : String,
 ) -> Unit raise {
   let conn = open_db()
@@ -150,7 +150,7 @@ pub fn upsert_session(
   let stmt = conn.prepare(sql)
   stmt.bind(index=1, session_id)
   stmt.bind(index=2, cwd)
-  stmt.bind(index=3, event)
+  stmt.bind(index=3, event.to_event_string())
   stmt.bind(index=4, tool_name)
   stmt.bind(index=5, session_name)
   stmt.bind(index=6, now)
@@ -165,7 +165,7 @@ pub fn upsert_session(
 
 ///|
 /// Get a session by ID. Returns None if not found.
-pub fn get_session(session_id : String) -> @types.Session? raise {
+pub fn get_session(session_id : String) -> @session.Session? raise {
   let conn = open_db()
   let sql =
     #|SELECT session_id, cwd, event,
@@ -183,7 +183,7 @@ pub fn get_session(session_id : String) -> @types.Session? raise {
 
 ///|
 /// List all sessions ordered by updated_at DESC.
-pub fn list_sessions() -> Array[@types.Session] raise {
+pub fn list_sessions() -> Array[@session.Session] raise {
   let conn = open_db()
   let sql =
     #|SELECT session_id, cwd, event,
@@ -192,7 +192,7 @@ pub fn list_sessions() -> Array[@types.Session] raise {
     #|  COALESCE(pane_id, ''), COALESCE(pane_terminal, '')
     #|FROM sessions ORDER BY updated_at DESC
   let stmt = conn.prepare(sql)
-  let sessions : Array[@types.Session] = []
+  let sessions : Array[@session.Session] = []
   while stmt.step() {
     sessions.push(read_session(stmt))
   }
@@ -225,10 +225,15 @@ pub fn delete_session(session_id : String) -> Bool raise {
 }
 
 ///|
-fn read_session(stmt : @sqlite3.Statement) -> @types.Session {
+fn read_session(stmt : @sqlite3.Statement) -> @session.Session {
   let session_id : String = stmt.column(index=0)
   let cwd : String = stmt.column(index=1)
-  let event : String = stmt.column(index=2)
+  let event_str : String = stmt.column(index=2)
+  let event = match @session.HookEvent::from_string(event_str) {
+    Some(e) => e
+    // DB values are always written by us, so this should never happen
+    None => @session.SessionStart
+  }
   let tool_name : String = stmt.column(index=3)
   let session_name : String = stmt.column(index=4)
   let created_at : Int64 = stmt.column(index=5)
@@ -236,7 +241,7 @@ fn read_session(stmt : @sqlite3.Statement) -> @types.Session {
   let state_changed_at : Int64 = stmt.column(index=7)
   let pane_id : String = stmt.column(index=8)
   let pane_terminal : String = stmt.column(index=9)
-  @types.Session::{
+  @session.Session::{
     session_id,
     cwd,
     event,

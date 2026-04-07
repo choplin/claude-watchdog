@@ -86,10 +86,6 @@ fn validate_config(raw_hooks : Array[Map[String, String]]) -> Config? {
     }
     if has_on_event {
       let event_str = raw["on_event"]
-      if !@types.is_valid_event(event_str) {
-        @ffi.eprintln("Error: invalid event '\{event_str}'")
-        return None
-      }
       hooks.push(HookConfig::{
         on_event: event_str,
         on_state_change: None,
@@ -103,14 +99,6 @@ fn validate_config(raw_hooks : Array[Map[String, String]]) -> Config? {
       let to = match raw.get("on_state_change.to") {
         Some(v) => v
         None => ""
-      }
-      if from != "" && !@types.is_valid_state(from) {
-        @ffi.eprintln("Error: invalid state '\{from}'")
-        return None
-      }
-      if to != "" && !@types.is_valid_state(to) {
-        @ffi.eprintln("Error: invalid state '\{to}'")
-        return None
       }
       hooks.push(HookConfig::{
         on_event: "",

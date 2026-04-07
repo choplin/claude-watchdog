@@ -1,5 +1,4 @@
 import {
-  "choplin/claude_watchdog/lib/types",
   "choplin/claude_watchdog/lib/ffi",
   "moonbitlang/core/env",
   "bobzhang/toml",

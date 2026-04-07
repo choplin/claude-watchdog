@@ -1,6 +1,7 @@
 import {
   "choplin/claude_watchdog/lib/ffi",
-  "choplin/claude_watchdog/lib/types",
+  "choplin/claude_watchdog/lib/session",
+  "choplin/claude_watchdog/lib/terminal",
   "moonbit-community/sqlite3",
   "moonbitlang/core/env",
 }

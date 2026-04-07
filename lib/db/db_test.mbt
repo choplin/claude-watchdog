@@ -17,7 +17,7 @@ test "init_db creates table" {
 ///|
 test "upsert and get session" {
   setup_test_db()
-  @db.upsert_session("s1", "/tmp/project", "SessionStart", "", None, "")
+  @db.upsert_session("s1", "/tmp/project", SessionStart, "", None, "")
   let session = @db.get_session("s1")
   guard session is Some(s) else { fail("expected session") }
   inspect(s.session_id, content="s1")
@@ -30,8 +30,8 @@ test "upsert and get session" {
 ///|
 test "upsert updates event" {
   setup_test_db()
-  @db.upsert_session("s1", "/tmp/project", "SessionStart", "", None, "")
-  @db.upsert_session("s1", "/tmp/project", "UserPromptSubmit", "", None, "")
+  @db.upsert_session("s1", "/tmp/project", SessionStart, "", None, "")
+  @db.upsert_session("s1", "/tmp/project", UserPromptSubmit, "", None, "")
   let session = @db.get_session("s1")
   guard session is Some(s) else { fail("expected session") }
   inspect(s.event, content="UserPromptSubmit")
@@ -40,7 +40,7 @@ test "upsert updates event" {
 ///|
 test "upsert with tool_name" {
   setup_test_db()
-  @db.upsert_session("s1", "/tmp", "PreToolUse", "Bash", None, "")
+  @db.upsert_session("s1", "/tmp", PreToolUse, "Bash", None, "")
   let session = @db.get_session("s1")
   guard session is Some(s) else { fail("expected session") }
   inspect(s.tool_name, content="Bash")
@@ -49,8 +49,8 @@ test "upsert with tool_name" {
 ///|
 test "upsert with pane info" {
   setup_test_db()
-  let pane = @types.PaneInfo::{ terminal: "tmux", pane_id: "%0" }
-  @db.upsert_session("s1", "/tmp", "SessionStart", "", Some(pane), "")
+  let pane = @terminal.PaneInfo::{ terminal: "tmux", pane_id: "%0" }
+  @db.upsert_session("s1", "/tmp", SessionStart, "", Some(pane), "")
   let session = @db.get_session("s1")
   guard session is Some(s) else { fail("expected session") }
   inspect(s.pane_id, content="%0")
@@ -60,8 +60,8 @@ test "upsert with pane info" {
 ///|
 test "upsert session_name coalesce" {
   setup_test_db()
-  @db.upsert_session("s1", "/tmp", "SessionStart", "", None, "my-task")
-  @db.upsert_session("s1", "/tmp", "UserPromptSubmit", "", None, "")
+  @db.upsert_session("s1", "/tmp", SessionStart, "", None, "my-task")
+  @db.upsert_session("s1", "/tmp", UserPromptSubmit, "", None, "")
   let session = @db.get_session("s1")
   guard session is Some(s) else { fail("expected session") }
   // session_name should be preserved
@@ -71,8 +71,8 @@ test "upsert session_name coalesce" {
 ///|
 test "list sessions returns all" {
   setup_test_db()
-  @db.upsert_session("s1", "/tmp/a", "SessionStart", "", None, "")
-  @db.upsert_session("s2", "/tmp/b", "SessionStart", "", None, "")
+  @db.upsert_session("s1", "/tmp/a", SessionStart, "", None, "")
+  @db.upsert_session("s2", "/tmp/b", SessionStart, "", None, "")
   let sessions = @db.list_sessions()
   inspect(sessions.length(), content="2")
   // Both sessions should be returned
@@ -84,7 +84,7 @@ test "list sessions returns all" {
 ///|
 test "delete session" {
   setup_test_db()
-  @db.upsert_session("s1", "/tmp", "SessionStart", "", None, "")
+  @db.upsert_session("s1", "/tmp", SessionStart, "", None, "")
   let deleted = @db.delete_session("s1")
   inspect(deleted, content="true")
   let session = @db.get_session("s1")

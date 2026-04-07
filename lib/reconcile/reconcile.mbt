@@ -51,7 +51,7 @@ fn list_panes(terminal : String) -> Map[String, Unit]? {
 ///|
 /// Check if a session is stale.
 fn is_stale(
-  session : @types.Session,
+  session : @session.Session,
   pane_cache : Map[String, Map[String, Unit]?],
   ttl : Int64,
   now : Int64,
@@ -75,7 +75,7 @@ fn is_stale(
 /// Remove stale sessions. Returns list of deleted session IDs.
 pub fn reconcile(ttl : Int64) -> Array[String] {
   let deleted : Array[String] = []
-  let sessions_result : Result[Array[@types.Session], _] = try? @db.list_sessions()
+  let sessions_result : Result[Array[@session.Session], _] = try? @db.list_sessions()
   let sessions = match sessions_result {
     Ok(s) => s
     Err(_) => return deleted
@@ -96,14 +96,14 @@ pub fn reconcile(ttl : Int64) -> Array[String] {
         Ok(true) => {
           deleted.push(session.session_id)
           // Fire SessionEnd hook
-          @userhooks.fire_user_hooks(cfg, @userhooks.HookContext::{
+          @hook.fire(cfg, @hook.HookContext::{
             session_id: session.session_id,
             cwd: session.cwd,
-            event: "SessionEnd",
+            event: @session.SessionEnd,
             tool_name: "",
             session_name: session.session_name,
-            state: "",
-            prev_state: prev_state.to_state_string(),
+            state: None,
+            prev_state: Some(prev_state),
             pane_id: session.pane_id,
             pane_terminal: session.pane_terminal,
           })

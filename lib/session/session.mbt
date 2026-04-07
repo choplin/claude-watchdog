@@ -82,7 +82,7 @@ pub fn is_valid_state(s : String) -> Bool {
 pub(all) struct Session {
   session_id : String
   cwd : String
-  event : String
+  event : HookEvent
   tool_name : String // "" = absent
   session_name : String // "" = absent
   created_at : Int64
@@ -90,10 +90,4 @@ pub(all) struct Session {
   state_changed_at : Int64
   pane_id : String // "" = absent
   pane_terminal : String // "" = absent
-} derive(Show, Eq)
-
-///|
-pub(all) struct PaneInfo {
-  terminal : String // "tmux" or "wez"
-  pane_id : String
 } derive(Show, Eq)

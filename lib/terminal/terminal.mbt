@@ -1,12 +1,18 @@
 ///|
+pub(all) struct PaneInfo {
+  terminal : String // "tmux" or "wez"
+  pane_id : String
+} derive(Show, Eq)
+
+///|
 /// Detect the current terminal multiplexer pane.
 /// Checks TMUX_PANE first (tmux priority), then WEZTERM_PANE.
-pub fn detect_pane() -> @types.PaneInfo? {
+pub fn detect_pane() -> PaneInfo? {
   match @env.get_env_var("TMUX_PANE") {
-    Some(pane_id) => Some(@types.PaneInfo::{ terminal: "tmux", pane_id })
+    Some(pane_id) => Some(PaneInfo::{ terminal: "tmux", pane_id })
     None =>
       match @env.get_env_var("WEZTERM_PANE") {
-        Some(pane_id) => Some(@types.PaneInfo::{ terminal: "wez", pane_id })
+        Some(pane_id) => Some(PaneInfo::{ terminal: "wez", pane_id })
         None => None
       }
   }
@@ -27,7 +33,7 @@ pub fn format_pane(pane_id : String) -> String {
 /// Returns "" if no sessions have pane info,
 /// "TMUX" or "WEZ" if all from one terminal,
 /// "PANE" if mixed.
-pub fn pane_column_header(sessions : Array[@types.Session]) -> String {
+pub fn pane_column_header(sessions : Array[@session.Session]) -> String {
   let mut has_tmux = false
   let mut has_wez = false
   for session in sessions {

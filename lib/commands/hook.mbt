@@ -43,8 +43,13 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     _ => ""
   }
   let cfg = @config.load_config()
+  // Parse event at the boundary
+  let event = match @session.HookEvent::from_string(event_str) {
+    Some(e) => e
+    None => return // Unknown event, silent exit
+  }
   // Handle SessionEnd
-  if event_str == "SessionEnd" {
+  if event == @session.SessionEnd {
     let init_result : Result[_, _] = try? @db.init_db()
     match init_result {
       Err(e) => {
@@ -53,14 +58,14 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
       }
       Ok(_) => ()
     }
-    let prev_session : @types.Session? = match
+    let prev_session : @session.Session? = match
       (try? @db.get_session(session_id) : Result[_, _]) {
       Ok(s) => s
       Err(_) => None
     }
-    let prev_state = match prev_session {
-      Some(s) => @interpret.interpret_state(s).to_state_string()
-      None => ""
+    let prev_state : @session.SessionState? = match prev_session {
+      Some(s) => Some(@interpret.interpret_state(s))
+      None => None
     }
     let prev_cwd = match prev_session {
       Some(s) => s.cwd
@@ -81,13 +86,13 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     // Delete session
     ignore(try? @db.delete_session(session_id))
     // Fire hooks
-    @userhooks.fire_user_hooks(cfg, @userhooks.HookContext::{
+    @hook.fire(cfg, @hook.HookContext::{
       session_id,
       cwd: prev_cwd,
-      event: "SessionEnd",
+      event,
       tool_name: "",
       session_name: prev_session_name,
-      state: "",
+      state: None,
       prev_state,
       pane_id: prev_pane_id,
       pane_terminal: prev_pane_terminal,
@@ -95,10 +100,6 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     return
   }
   // Handle update events
-  let event = match @types.HookEvent::from_string(event_str) {
-    Some(e) => e
-    None => return // Unknown event, silent exit
-  }
   if !event.is_update_event() {
     return
   }
@@ -114,20 +115,20 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     Ok(_) => ()
   }
   // Get previous session for state comparison
-  let prev_session : @types.Session? = match
+  let prev_session : @session.Session? = match
     (try? @db.get_session(session_id) : Result[_, _]) {
     Ok(s) => s
     Err(_) => None
   }
-  let prev_state = match prev_session {
-    Some(s) => @interpret.interpret_state(s).to_state_string()
-    None => ""
+  let prev_state : @session.SessionState? = match prev_session {
+    Some(s) => Some(@interpret.interpret_state(s))
+    None => None
   }
   // Detect pane
   let pane = @terminal.detect_pane()
   // Upsert session
   let upsert_result : Result[_, _] = try? @db.upsert_session(
-    session_id, cwd, event_str, tool_name, pane, session_name,
+    session_id, cwd, event, tool_name, pane, session_name,
   )
   match upsert_result {
     Err(e) => {
@@ -137,14 +138,14 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     Ok(_) => ()
   }
   // Get updated session
-  let new_session : @types.Session? = match
+  let new_session : @session.Session? = match
     (try? @db.get_session(session_id) : Result[_, _]) {
     Ok(s) => s
     Err(_) => None
   }
-  let new_state = match new_session {
-    Some(s) => @interpret.interpret_state(s).to_state_string()
-    None => ""
+  let new_state : @session.SessionState? = match new_session {
+    Some(s) => Some(@interpret.interpret_state(s))
+    None => None
   }
   let new_pane_id = match new_session {
     Some(s) => s.pane_id
@@ -163,10 +164,10 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
       }
   }
   // Fire hooks
-  @userhooks.fire_user_hooks(cfg, @userhooks.HookContext::{
+  @hook.fire(cfg, @hook.HookContext::{
     session_id,
     cwd,
-    event: event_str,
+    event,
     tool_name,
     session_name,
     state: new_state,

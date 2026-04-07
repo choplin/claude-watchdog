@@ -18,7 +18,7 @@ pub fn run_list(matches : @argparse.Matches) -> Unit {
     ignore(@reconcile.reconcile(@reconcile.default_ttl))
   }
   // Get sessions
-  let sessions_result : Result[Array[@types.Session], _] = try? @db.list_sessions()
+  let sessions_result : Result[Array[@session.Session], _] = try? @db.list_sessions()
   let sessions = match sessions_result {
     Ok(s) => s
     Err(e) => {
@@ -54,14 +54,14 @@ fn nullable_json_string(s : String) -> Json {
 }
 
 ///|
-fn output_json(sessions : Array[@types.Session]) -> Unit {
+fn output_json(sessions : Array[@session.Session]) -> Unit {
   let arr : Array[Json] = []
   for session in sessions {
     let state = @interpret.interpret_state(session)
     let obj : Map[String, Json] = {}
     obj["session_id"] = Json::string(session.session_id)
     obj["cwd"] = Json::string(session.cwd)
-    obj["event"] = Json::string(session.event)
+    obj["event"] = Json::string(session.event.to_event_string())
     obj["tool_name"] = nullable_json_string(session.tool_name)
     obj["session_name"] = nullable_json_string(session.session_name)
     obj["created_at"] = Json::number(session.created_at.to_double())
@@ -76,7 +76,7 @@ fn output_json(sessions : Array[@types.Session]) -> Unit {
 }
 
 ///|
-fn output_text(sessions : Array[@types.Session], use_color : Bool) -> Unit {
+fn output_text(sessions : Array[@session.Session], use_color : Bool) -> Unit {
   if sessions.is_empty() {
     println("No active sessions")
     return
@@ -153,7 +153,7 @@ fn ansi_color(code : Int, text : String, use_color : Bool) -> String {
 }
 
 ///|
-fn state_icon(state : @types.SessionState, use_color : Bool) -> String {
+fn state_icon(state : @session.SessionState, use_color : Bool) -> String {
   match state {
     Running => ansi_color(32, "●", use_color) // green
     WaitingInput => ansi_color(33, "○", use_color) // yellow
@@ -162,7 +162,7 @@ fn state_icon(state : @types.SessionState, use_color : Bool) -> String {
 }
 
 ///|
-fn state_label(state : @types.SessionState, use_color : Bool) -> String {
+fn state_label(state : @session.SessionState, use_color : Bool) -> String {
   let label = @interpret.format_state(state)
   match state {
     Running => ansi_color(32, label, use_color)
