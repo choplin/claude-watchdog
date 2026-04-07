@@ -1,20 +1,4 @@
 ///|
-/// Interpret the current state of a session based on its event and tool_name.
-pub fn interpret_state(session : @session.Session) -> @session.SessionState {
-  match session.event {
-    SessionStart | Stop => @session.WaitingInput
-    UserPromptSubmit => @session.Running
-    PreToolUse =>
-      match session.tool_name {
-        "AskUserQuestion" => @session.WaitingQuestion
-        "ExitPlanMode" => @session.WaitingApproval
-        _ => @session.Running
-      }
-    SessionEnd => @session.WaitingInput
-  }
-}
-
-///|
 /// Format a session state as a human-readable label.
 pub fn format_state(state : @session.SessionState) -> String {
   match state {

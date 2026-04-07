@@ -1,15 +1,14 @@
 ///|
 fn make_session(
   session_id : String,
-  pane_id~ : String = "",
-  pane_terminal~ : String = "",
-  updated_at~ : Int64 = 0L,
+  pane_id? : String = "",
+  pane_terminal? : String = "",
+  updated_at? : Int64 = 0L,
 ) -> @session.Session {
   {
     session_id,
     cwd: "/tmp",
-    event: @session.SessionStart,
-    tool_name: "",
+    state: @session.WaitingInput,
     session_name: "",
     created_at: 0L,
     updated_at,

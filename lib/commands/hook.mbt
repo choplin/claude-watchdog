@@ -64,7 +64,7 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
       Err(_) => None
     }
     let prev_state : @session.SessionState? = match prev_session {
-      Some(s) => Some(@interpret.interpret_state(s))
+      Some(s) => Some(s.state)
       None => None
     }
     let prev_cwd = match prev_session {
@@ -121,14 +121,16 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     Err(_) => None
   }
   let prev_state : @session.SessionState? = match prev_session {
-    Some(s) => Some(@interpret.interpret_state(s))
+    Some(s) => Some(s.state)
     None => None
   }
+  // Compute new state at boundary
+  let new_state = @session.SessionState::from_event(event, tool_name)
   // Detect pane
   let pane = @terminal.detect_pane()
   // Upsert session
   let upsert_result : Result[_, _] = try? @db.upsert_session(
-    session_id, cwd, event, tool_name, pane, session_name,
+    session_id, cwd, new_state, pane, session_name,
   )
   match upsert_result {
     Err(e) => {
@@ -137,29 +139,20 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     }
     Ok(_) => ()
   }
-  // Get updated session
-  let new_session : @session.Session? = match
-    (try? @db.get_session(session_id) : Result[_, _]) {
-    Ok(s) => s
-    Err(_) => None
-  }
-  let new_state : @session.SessionState? = match new_session {
-    Some(s) => Some(@interpret.interpret_state(s))
-    None => None
-  }
-  let new_pane_id = match new_session {
-    Some(s) => s.pane_id
+  // Resolve pane info
+  let new_pane_id = match pane {
+    Some(p) => p.pane_id
     None =>
-      match pane {
-        Some(p) => p.pane_id
+      match prev_session {
+        Some(s) => s.pane_id
         None => ""
       }
   }
-  let new_pane_terminal = match new_session {
-    Some(s) => s.pane_terminal
+  let new_pane_terminal = match pane {
+    Some(p) => p.terminal
     None =>
-      match pane {
-        Some(p) => p.terminal
+      match prev_session {
+        Some(s) => s.pane_terminal
         None => ""
       }
   }
@@ -170,7 +163,7 @@ pub fn run_hook(matches : @argparse.Matches) -> Unit {
     event,
     tool_name,
     session_name,
-    state: new_state,
+    state: Some(new_state),
     prev_state,
     pane_id: new_pane_id,
     pane_terminal: new_pane_terminal,

@@ -75,7 +75,9 @@ fn is_stale(
 /// Find duplicate sessions on the same pane.
 /// Sessions are expected in updated_at DESC order; first seen per pane wins.
 /// Returns a set of session IDs that are duplicates (older entries).
-fn find_pane_duplicates(sessions : Array[@session.Session]) -> Map[String, Unit] {
+fn find_pane_duplicates(
+  sessions : Array[@session.Session],
+) -> Map[String, Unit] {
   let seen : Map[String, Unit] = {}
   let dupes : Map[String, Unit] = {}
   for session in sessions {
@@ -111,7 +113,7 @@ pub fn reconcile(ttl : Int64) -> Array[String] {
   for session in sessions {
     if pane_dupes.contains(session.session_id) ||
       is_stale(session, pane_cache, ttl, now) {
-      let prev_state = @interpret.interpret_state(session)
+      let prev_state = session.state
       let del_result : Result[Bool, _] = try? @db.delete_session(
         session.session_id,
       )

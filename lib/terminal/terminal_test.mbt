@@ -91,8 +91,7 @@ test "pane_column_header: tmux only" {
     @session.Session::{
       session_id: "s1",
       cwd: "/tmp",
-      event: SessionStart,
-      tool_name: "",
+      state: WaitingInput,
       session_name: "",
       created_at: 0L,
       updated_at: 0L,
@@ -110,8 +109,7 @@ test "pane_column_header: mixed" {
     @session.Session::{
       session_id: "s1",
       cwd: "/tmp",
-      event: SessionStart,
-      tool_name: "",
+      state: WaitingInput,
       session_name: "",
       created_at: 0L,
       updated_at: 0L,
@@ -122,8 +120,7 @@ test "pane_column_header: mixed" {
     @session.Session::{
       session_id: "s2",
       cwd: "/tmp",
-      event: SessionStart,
-      tool_name: "",
+      state: WaitingInput,
       session_name: "",
       created_at: 0L,
       updated_at: 0L,

@@ -24,16 +24,14 @@ fn open_db() -> @sqlite3.Connection raise {
 }
 
 ///|
-/// Initialize the database: create table and run migrations.
+/// Initialize the database: create table.
 pub fn init_db() -> Unit raise {
   let conn = open_db()
-  // Create table
   let create_sql =
     #|CREATE TABLE IF NOT EXISTS sessions (
     #|  session_id TEXT PRIMARY KEY,
     #|  cwd TEXT NOT NULL,
-    #|  event TEXT NOT NULL,
-    #|  tool_name TEXT,
+    #|  state TEXT NOT NULL,
     #|  session_name TEXT,
     #|  created_at INTEGER NOT NULL,
     #|  updated_at INTEGER NOT NULL,
@@ -44,70 +42,7 @@ pub fn init_db() -> Unit raise {
   let stmt = conn.prepare(create_sql)
   stmt.step_once()
   stmt.finalize()
-  // Migration: rename tmux_pane to pane_id if it exists
-  run_migrations(conn)
   conn.close()
-}
-
-///|
-fn run_migrations(conn : @sqlite3.Connection) -> Unit raise {
-  // Check if tmux_pane column exists (old schema)
-  let pragma_stmt = conn.prepare("PRAGMA table_info(sessions)")
-  let mut has_tmux_pane = false
-  let mut has_pane_id = false
-  let mut has_pane_terminal = false
-  let mut has_session_name = false
-  while pragma_stmt.step() {
-    let col_name : String = pragma_stmt.column(index=1)
-    match col_name {
-      "tmux_pane" => has_tmux_pane = true
-      "pane_id" => has_pane_id = true
-      "pane_terminal" => has_pane_terminal = true
-      "session_name" => has_session_name = true
-      _ => ()
-    }
-  }
-  pragma_stmt.finalize()
-  // Migrate tmux_pane -> pane_id
-  if has_tmux_pane && !has_pane_id {
-    let alter = conn.prepare(
-      "ALTER TABLE sessions RENAME COLUMN tmux_pane TO pane_id",
-    )
-    alter.step_once()
-    alter.finalize()
-  }
-  // Add pane_terminal if missing
-  if !has_pane_terminal {
-    let result : Result[_, _] = try? ({
-      let alter = conn.prepare(
-        "ALTER TABLE sessions ADD COLUMN pane_terminal TEXT",
-      )
-      alter.step_once()
-      alter.finalize()
-    })
-    match result {
-      // Set existing rows with pane_id to "tmux"
-      Ok(_) => {
-        let update = conn.prepare(
-          "UPDATE sessions SET pane_terminal = 'tmux' WHERE pane_id IS NOT NULL AND pane_id != ''",
-        )
-        update.step_once()
-        update.finalize()
-      }
-      Err(_) => () // Column may already exist
-    }
-  }
-  // Add session_name if missing
-  if !has_session_name {
-    let result : Result[_, _] = try? ({
-      let alter = conn.prepare(
-        "ALTER TABLE sessions ADD COLUMN session_name TEXT",
-      )
-      alter.step_once()
-      alter.finalize()
-    })
-    ignore(result)
-  }
 }
 
 ///|
@@ -115,8 +50,7 @@ fn run_migrations(conn : @sqlite3.Connection) -> Unit raise {
 pub fn upsert_session(
   session_id : String,
   cwd : String,
-  event : @session.HookEvent,
-  tool_name : String,
+  state : @session.SessionState,
   pane : @terminal.PaneInfo?,
   session_name : String,
 ) -> Unit raise {
@@ -131,17 +65,15 @@ pub fn upsert_session(
     None => ""
   }
   let sql =
-    #|INSERT INTO sessions (session_id, cwd, event, tool_name, session_name, created_at, updated_at, state_changed_at, pane_id, pane_terminal)
-    #|VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''))
+    #|INSERT INTO sessions (session_id, cwd, state, session_name, created_at, updated_at, state_changed_at, pane_id, pane_terminal)
+    #|VALUES (?, ?, ?, NULLIF(?, ''), ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''))
     #|ON CONFLICT(session_id) DO UPDATE SET
     #|  cwd = excluded.cwd,
-    #|  event = excluded.event,
-    #|  tool_name = NULLIF(excluded.tool_name, ''),
+    #|  state = excluded.state,
     #|  session_name = COALESCE(NULLIF(excluded.session_name, ''), sessions.session_name),
     #|  updated_at = excluded.updated_at,
     #|  state_changed_at = CASE
-    #|    WHEN sessions.event != excluded.event
-    #|      OR COALESCE(sessions.tool_name, '') != COALESCE(excluded.tool_name, '')
+    #|    WHEN sessions.state != excluded.state
     #|    THEN excluded.updated_at
     #|    ELSE sessions.state_changed_at
     #|  END,
@@ -150,14 +82,13 @@ pub fn upsert_session(
   let stmt = conn.prepare(sql)
   stmt.bind(index=1, session_id)
   stmt.bind(index=2, cwd)
-  stmt.bind(index=3, event.to_event_string())
-  stmt.bind(index=4, tool_name)
-  stmt.bind(index=5, session_name)
+  stmt.bind(index=3, state.to_state_string())
+  stmt.bind(index=4, session_name)
+  stmt.bind(index=5, now)
   stmt.bind(index=6, now)
   stmt.bind(index=7, now)
-  stmt.bind(index=8, now)
-  stmt.bind(index=9, pane_id)
-  stmt.bind(index=10, pane_terminal)
+  stmt.bind(index=8, pane_id)
+  stmt.bind(index=9, pane_terminal)
   stmt.step_once()
   stmt.finalize()
   conn.close()
@@ -168,8 +99,8 @@ pub fn upsert_session(
 pub fn get_session(session_id : String) -> @session.Session? raise {
   let conn = open_db()
   let sql =
-    #|SELECT session_id, cwd, event,
-    #|  COALESCE(tool_name, ''), COALESCE(session_name, ''),
+    #|SELECT session_id, cwd, state,
+    #|  COALESCE(session_name, ''),
     #|  created_at, updated_at, state_changed_at,
     #|  COALESCE(pane_id, ''), COALESCE(pane_terminal, '')
     #|FROM sessions WHERE session_id = ?
@@ -186,8 +117,8 @@ pub fn get_session(session_id : String) -> @session.Session? raise {
 pub fn list_sessions() -> Array[@session.Session] raise {
   let conn = open_db()
   let sql =
-    #|SELECT session_id, cwd, event,
-    #|  COALESCE(tool_name, ''), COALESCE(session_name, ''),
+    #|SELECT session_id, cwd, state,
+    #|  COALESCE(session_name, ''),
     #|  created_at, updated_at, state_changed_at,
     #|  COALESCE(pane_id, ''), COALESCE(pane_terminal, '')
     #|FROM sessions ORDER BY updated_at DESC
@@ -228,24 +159,22 @@ pub fn delete_session(session_id : String) -> Bool raise {
 fn read_session(stmt : @sqlite3.Statement) -> @session.Session {
   let session_id : String = stmt.column(index=0)
   let cwd : String = stmt.column(index=1)
-  let event_str : String = stmt.column(index=2)
-  let event = match @session.HookEvent::from_string(event_str) {
-    Some(e) => e
+  let state_str : String = stmt.column(index=2)
+  let state = match @session.SessionState::from_string(state_str) {
+    Some(s) => s
     // DB values are always written by us, so this should never happen
-    None => @session.SessionStart
+    None => @session.WaitingInput
   }
-  let tool_name : String = stmt.column(index=3)
-  let session_name : String = stmt.column(index=4)
-  let created_at : Int64 = stmt.column(index=5)
-  let updated_at : Int64 = stmt.column(index=6)
-  let state_changed_at : Int64 = stmt.column(index=7)
-  let pane_id : String = stmt.column(index=8)
-  let pane_terminal : String = stmt.column(index=9)
+  let session_name : String = stmt.column(index=3)
+  let created_at : Int64 = stmt.column(index=4)
+  let updated_at : Int64 = stmt.column(index=5)
+  let state_changed_at : Int64 = stmt.column(index=6)
+  let pane_id : String = stmt.column(index=7)
+  let pane_terminal : String = stmt.column(index=8)
   @session.Session::{
     session_id,
     cwd,
-    event,
-    tool_name,
+    state,
     session_name,
     created_at,
     updated_at,

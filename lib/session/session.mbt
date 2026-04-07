@@ -1,54 +1,13 @@
 ///|
-pub(all) enum HookEvent {
-  SessionStart
-  SessionEnd
-  UserPromptSubmit
-  PreToolUse
-  Stop
-} derive(Show, Eq)
-
-///|
-pub fn HookEvent::from_string(s : String) -> HookEvent? {
-  match s {
-    "SessionStart" => Some(SessionStart)
-    "SessionEnd" => Some(SessionEnd)
-    "UserPromptSubmit" => Some(UserPromptSubmit)
-    "PreToolUse" => Some(PreToolUse)
-    "Stop" => Some(Stop)
-    _ => None
-  }
-}
-
-///|
-pub fn HookEvent::to_event_string(self : HookEvent) -> String {
-  match self {
-    SessionStart => "SessionStart"
-    SessionEnd => "SessionEnd"
-    UserPromptSubmit => "UserPromptSubmit"
-    PreToolUse => "PreToolUse"
-    Stop => "Stop"
-  }
-}
-
-///|
-/// Events that trigger a DB upsert (SessionEnd excluded).
-pub fn HookEvent::is_update_event(self : HookEvent) -> Bool {
-  match self {
-    SessionStart | UserPromptSubmit | PreToolUse | Stop => true
-    SessionEnd => false
-  }
-}
-
-///|
-pub fn is_valid_event(s : String) -> Bool {
-  HookEvent::from_string(s) is Some(_)
-}
-
-///|
+/// Persisted state of a Claude Code session, derived from `HookEvent` at the boundary.
 pub(all) enum SessionState {
+  /// Idle — waiting for user input.
   WaitingInput
+  /// Claude asked the user a question (`AskUserQuestion` tool).
   WaitingQuestion
+  /// Claude is waiting for plan approval (`ExitPlanMode` tool).
   WaitingApproval
+  /// Claude is actively working.
   Running
 } derive(Show, Eq)
 
@@ -74,20 +33,42 @@ pub fn SessionState::to_state_string(self : SessionState) -> String {
 }
 
 ///|
-pub fn is_valid_state(s : String) -> Bool {
-  SessionState::from_string(s) is Some(_)
+/// Derive the session state from a hook event and tool name.
+pub fn SessionState::from_event(
+  event : HookEvent,
+  tool_name : String,
+) -> SessionState {
+  match event {
+    SessionStart | Stop | SessionEnd => WaitingInput
+    UserPromptSubmit => Running
+    PreToolUse =>
+      match tool_name {
+        "AskUserQuestion" => WaitingQuestion
+        "ExitPlanMode" => WaitingApproval
+        _ => Running
+      }
+  }
 }
 
 ///|
+/// A tracked Claude Code session. Persisted in SQLite.
 pub(all) struct Session {
+  /// Unique session identifier assigned by Claude Code.
   session_id : String
+  /// Working directory of the session.
   cwd : String
-  event : HookEvent
-  tool_name : String // "" = absent
-  session_name : String // "" = absent
+  /// Current state of the session.
+  state : SessionState
+  /// User-assigned session name ("" if absent).
+  session_name : String
+  /// Unix timestamp when the session was first seen.
   created_at : Int64
+  /// Unix timestamp of the most recent update.
   updated_at : Int64
+  /// Unix timestamp when `state` last changed.
   state_changed_at : Int64
-  pane_id : String // "" = absent
-  pane_terminal : String // "" = absent
+  /// Terminal pane identifier ("" if unknown).
+  pane_id : String
+  /// Terminal multiplexer type, e.g. "tmux" or "wez" ("" if unknown).
+  pane_terminal : String
 } derive(Show, Eq)

@@ -12,7 +12,8 @@ pub fn build_app() -> @argparse.Command {
         about="Handle hook events (reads JSON from stdin)",
         positionals=[
           @argparse.PositionArg(
-            "event", num_args=@argparse.ValueRange::single(),
+            "event",
+            num_args=@argparse.ValueRange::single(),
           ),
           @argparse.PositionArg("tool-name"),
         ],
@@ -26,31 +27,20 @@ pub fn build_app() -> @argparse.Command {
         ],
         flags=[@argparse.FlagArg("no-reconcile")],
       ),
-      @argparse.Command(
-        "update",
-        about="Register or update a session",
-        options=[
-          @argparse.OptionArg("session-id", required=true),
-          @argparse.OptionArg("cwd", required=true),
-          @argparse.OptionArg("event", required=true),
-          @argparse.OptionArg("tool-name"),
-          @argparse.OptionArg("session-name"),
-          @argparse.OptionArg("pane-id"),
-          @argparse.OptionArg("pane-terminal"),
-        ],
-      ),
-      @argparse.Command(
-        "delete",
-        about="Delete a session",
-        options=[@argparse.OptionArg("session-id", required=true)],
-      ),
-      @argparse.Command(
-        "reconcile",
-        about="Remove stale sessions",
-        options=[
-          @argparse.OptionArg("format", short='f', default_values=["text"]),
-        ],
-      ),
+      @argparse.Command("update", about="Register or update a session", options=[
+        @argparse.OptionArg("session-id", required=true),
+        @argparse.OptionArg("cwd", required=true),
+        @argparse.OptionArg("state", required=true),
+        @argparse.OptionArg("session-name"),
+        @argparse.OptionArg("pane-id"),
+        @argparse.OptionArg("pane-terminal"),
+      ]),
+      @argparse.Command("delete", about="Delete a session", options=[
+        @argparse.OptionArg("session-id", required=true),
+      ]),
+      @argparse.Command("reconcile", about="Remove stale sessions", options=[
+        @argparse.OptionArg("format", short='f', default_values=["text"]),
+      ]),
     ],
   )
 }

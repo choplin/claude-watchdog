@@ -1,7 +1,6 @@
 import {
   "choplin/claude_watchdog/lib/session",
   "choplin/claude_watchdog/lib/db",
-  "choplin/claude_watchdog/lib/interpret",
   "choplin/claude_watchdog/lib/hook",
   "choplin/claude_watchdog/lib/config",
   "choplin/claude_watchdog/lib/ffi",

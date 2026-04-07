@@ -57,19 +57,16 @@ fn nullable_json_string(s : String) -> Json {
 fn output_json(sessions : Array[@session.Session]) -> Unit {
   let arr : Array[Json] = []
   for session in sessions {
-    let state = @interpret.interpret_state(session)
     let obj : Map[String, Json] = {}
     obj["session_id"] = Json::string(session.session_id)
     obj["cwd"] = Json::string(session.cwd)
-    obj["event"] = Json::string(session.event.to_event_string())
-    obj["tool_name"] = nullable_json_string(session.tool_name)
+    obj["state"] = Json::string(session.state.to_state_string())
     obj["session_name"] = nullable_json_string(session.session_name)
     obj["created_at"] = Json::number(session.created_at.to_double())
     obj["updated_at"] = Json::number(session.updated_at.to_double())
     obj["state_changed_at"] = Json::number(session.state_changed_at.to_double())
     obj["pane_id"] = nullable_json_string(session.pane_id)
     obj["pane_terminal"] = nullable_json_string(session.pane_terminal)
-    obj["interpreted_state"] = Json::string(state.to_state_string())
     arr.push(Json::object(obj))
   }
   println(Json::array(arr).stringify(indent=2))
@@ -87,7 +84,7 @@ fn output_text(sessions : Array[@session.Session], use_color : Bool) -> Unit {
   // Build rows
   let rows : Array[(String, String, String, String, String)] = []
   for session in sessions {
-    let state = @interpret.interpret_state(session)
+    let state = session.state
     let project = if session.session_name != "" {
       session.session_name
     } else {

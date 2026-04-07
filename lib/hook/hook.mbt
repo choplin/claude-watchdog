@@ -96,18 +96,12 @@ fn matches_hook(hook : TypedHookConfig, ctx : HookContext) -> Bool {
           }
           // Check from constraint
           match sc.from {
-            Some(from) =>
-              if ctx.prev_state != Some(from) {
-                return false
-              }
+            Some(from) => if ctx.prev_state != Some(from) { return false }
             None => ()
           }
           // Check to constraint
           match sc.to {
-            Some(to) =>
-              if ctx.state != Some(to) {
-                return false
-              }
+            Some(to) => if ctx.state != Some(to) { return false }
             None => ()
           }
           true
