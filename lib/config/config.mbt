@@ -35,9 +35,13 @@ pub fn get_config_path() -> String {
 
 ///|
 /// Load and validate the config file. Returns None if not found or invalid.
-pub fn load_config() -> Config? {
+pub async fn load_config() -> Config? {
   let path = get_config_path()
-  let content = @ffi.read_file(path)
+  if !@fs.exists(path) {
+    return None
+  }
+  let data = @fs.read_file(path)
+  let content = data.text()
   if content == "" {
     return None
   }

@@ -113,7 +113,7 @@ fn matches_hook(hook : TypedHookConfig, ctx : HookContext) -> Bool {
 ///|
 /// Fire user hooks that match the given context.
 /// Converts config strings to enums at this boundary.
-pub fn fire(cfg : @config.Config?, ctx : HookContext) -> Unit {
+pub async fn fire(cfg : @config.Config?, ctx : HookContext) -> Unit {
   let config = match cfg {
     None => return
     Some(c) => c
@@ -132,18 +132,19 @@ pub fn fire(cfg : @config.Config?, ctx : HookContext) -> Unit {
       None => continue
     }
     if matches_hook(typed, ctx) {
-      let env_pairs = [
-        "MONITOR_SESSION_ID=\{ctx.session_id}",
-        "MONITOR_CWD=\{ctx.cwd}",
-        "MONITOR_EVENT=\{ctx.event.to_event_string()}",
-        "MONITOR_TOOL_NAME=\{ctx.tool_name}",
-        "MONITOR_SESSION_NAME=\{ctx.session_name}",
-        "MONITOR_STATE=\{state_str}",
-        "MONITOR_PREV_STATE=\{prev_state_str}",
-        "MONITOR_PANE_ID=\{ctx.pane_id}",
-        "MONITOR_PANE_TERMINAL=\{ctx.pane_terminal}",
-      ]
-      @ffi.spawn_detached(typed.command, env_pairs)
+      let env : Map[String, String] = {}
+      env["MONITOR_SESSION_ID"] = ctx.session_id
+      env["MONITOR_CWD"] = ctx.cwd
+      env["MONITOR_EVENT"] = ctx.event.to_event_string()
+      env["MONITOR_TOOL_NAME"] = ctx.tool_name
+      env["MONITOR_SESSION_NAME"] = ctx.session_name
+      env["MONITOR_STATE"] = state_str
+      env["MONITOR_PREV_STATE"] = prev_state_str
+      env["MONITOR_PANE_ID"] = ctx.pane_id
+      env["MONITOR_PANE_TERMINAL"] = ctx.pane_terminal
+      ignore(
+        @process.spawn_orphan("sh", ["-c", typed.command], extra_env=env),
+      )
     }
   }
 }

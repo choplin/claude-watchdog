@@ -1,11 +1,11 @@
 ///|
 /// Handle hook events from Claude Code.
 /// Reads JSON from stdin: { "session_id": "...", "cwd": "...", "session_name": "..." }
-pub fn run_hook(matches : @argparse.Matches) -> Unit {
+pub async fn run_hook(matches : @argparse.Matches) -> Unit {
   let event_str = @cli.get_one(matches, "event")
   let tool_name = @cli.get_one(matches, "tool-name")
   // Read JSON from stdin
-  let input = @ffi.read_stdin()
+  let input = @stdio.stdin.read_all().text()
   let json_result : Result[Json, _] = try? @json.parse(input)
   let json = match json_result {
     Ok(j) => j

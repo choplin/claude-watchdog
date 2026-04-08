@@ -2,4 +2,5 @@ import {
   "choplin/claude_watchdog/lib/config",
   "choplin/claude_watchdog/lib/session",
   "choplin/claude_watchdog/lib/ffi",
+  "moonbitlang/async/process",
 }

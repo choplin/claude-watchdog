@@ -1,5 +1,5 @@
 ///|
-fn main {
+async fn main {
   let app = @cli.build_app()
   let result : Result[@argparse.Matches, _] = try? app.parse()
   let matches = match result {

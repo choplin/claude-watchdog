@@ -1,6 +1,6 @@
 ///|
 /// Manually trigger stale session cleanup.
-pub fn run_reconcile(matches : @argparse.Matches) -> Unit {
+pub async fn run_reconcile(matches : @argparse.Matches) -> Unit {
   let format = @cli.get_one(matches, "format")
   let init_result : Result[_, _] = try? @db.init_db()
   match init_result {

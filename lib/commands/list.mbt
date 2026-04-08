@@ -1,6 +1,6 @@
 ///|
 /// List all active sessions.
-pub fn run_list(matches : @argparse.Matches) -> Unit {
+pub async fn run_list(matches : @argparse.Matches) -> Unit {
   let format = @cli.get_one(matches, "format")
   let color_mode = @cli.get_one(matches, "color")
   let no_reconcile = @cli.get_flag(matches, "no-reconcile")

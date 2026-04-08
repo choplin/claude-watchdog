@@ -3,6 +3,7 @@ import {
   "choplin/claude_watchdog/lib/commands",
   "choplin/claude_watchdog/lib/ffi",
   "moonbitlang/core/argparse",
+  "moonbitlang/async",
 }
 
 options(

@@ -4,5 +4,6 @@ import {
   "choplin/claude_watchdog/lib/hook",
   "choplin/claude_watchdog/lib/config",
   "choplin/claude_watchdog/lib/ffi",
+  "moonbitlang/async/process",
   "moonbitlang/core/json",
 }

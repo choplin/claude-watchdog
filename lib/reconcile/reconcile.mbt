@@ -4,11 +4,24 @@ pub let default_ttl : Int64 = 86400L // 24 hours
 ///|
 /// List active panes for a given terminal multiplexer.
 /// Returns None if the command fails.
-fn list_panes(terminal : String) -> Map[String, Unit]? {
-  let output = match terminal {
-    "tmux" => @ffi.popen("tmux list-panes -a -F \"#{pane_id}\"")
-    "wez" => @ffi.popen("wezterm cli list --format json")
+async fn list_panes(terminal : String) -> Map[String, Unit]? {
+  let (cmd, args) : (String, Array[String]) = match terminal {
+    "tmux" => ("tmux", ["list-panes", "-a", "-F", "#{pane_id}"])
+    "wez" => ("wezterm", ["cli", "list", "--format", "json"])
     _ => return None
+  }
+  let result : Result[(Int, _), _] = try? @process.collect_stdout(
+    cmd, args[:],
+  )
+  let output = match result {
+    Ok((_, data)) => {
+      let text : Result[String, _] = try? data.text()
+      match text {
+        Ok(s) => s
+        Err(_) => return None
+      }
+    }
+    Err(_) => return None
   }
   if output == "" {
     return None
@@ -50,7 +63,7 @@ fn list_panes(terminal : String) -> Map[String, Unit]? {
 
 ///|
 /// Check if a session is stale.
-fn is_stale(
+async fn is_stale(
   session : @session.Session,
   pane_cache : Map[String, Map[String, Unit]?],
   ttl : Int64,
@@ -96,7 +109,7 @@ fn find_pane_duplicates(
 
 ///|
 /// Remove stale sessions. Returns list of deleted session IDs.
-pub fn reconcile(ttl : Int64) -> Array[String] {
+pub async fn reconcile(ttl : Int64) -> Array[String] {
   let deleted : Array[String] = []
   let sessions_result : Result[Array[@session.Session], _] = try? @db.list_sessions()
   let sessions = match sessions_result {
