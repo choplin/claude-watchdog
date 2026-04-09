@@ -41,6 +41,17 @@ pub fn build_app() -> @argparse.Command {
       @argparse.Command("reconcile", about="Remove stale sessions", options=[
         @argparse.OptionArg("format", short='f', default_values=["text"]),
       ]),
+      @argparse.Command(
+        "watch",
+        about="Watch sessions with periodic refresh",
+        options=[
+          @argparse.OptionArg("interval", short='n', default_values=["1"]),
+        ],
+        flags=[
+          @argparse.FlagArg("no-reconcile"),
+          @argparse.FlagArg("no-header", short='t'),
+        ],
+      ),
     ],
   )
 }

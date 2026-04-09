@@ -4,7 +4,24 @@ pub async fn run_list(matches : @argparse.Matches) -> Unit {
   let format = @cli.get_one(matches, "format")
   let color_mode = @cli.get_one(matches, "color")
   let no_reconcile = @cli.get_flag(matches, "no-reconcile")
-  // Init DB
+  init_db_or_exit()
+  // Reconcile first (unless --no-reconcile)
+  if !no_reconcile {
+    ignore(@reconcile.reconcile(@reconcile.default_ttl))
+  }
+  // Get sessions
+  let sessions = list_sessions_or_exit()
+  if format == "json" {
+    output_json(sessions)
+  } else {
+    let use_color = should_color(color_mode)
+    output_text(sessions, use_color)
+  }
+}
+
+///|
+/// Initialize the database, exiting on error.
+fn init_db_or_exit() -> Unit {
   let init_result : Result[_, _] = try? @db.init_db()
   match init_result {
     Err(e) => {
@@ -13,25 +30,19 @@ pub async fn run_list(matches : @argparse.Matches) -> Unit {
     }
     Ok(_) => ()
   }
-  // Reconcile first (unless --no-reconcile)
-  if !no_reconcile {
-    ignore(@reconcile.reconcile(@reconcile.default_ttl))
-  }
-  // Get sessions
+}
+
+///|
+/// List all sessions from the database, exiting on error.
+fn list_sessions_or_exit() -> Array[@session.Session] {
   let sessions_result : Result[Array[@session.Session], _] = try? @db.list_sessions()
-  let sessions = match sessions_result {
+  match sessions_result {
     Ok(s) => s
     Err(e) => {
       @ffi.eprintln("Error: \{e}")
       @ffi.exit(1)
-      return
+      []
     }
-  }
-  if format == "json" {
-    output_json(sessions)
-  } else {
-    let use_color = should_color(color_mode)
-    output_text(sessions, use_color)
   }
 }
 
@@ -74,9 +85,20 @@ fn output_json(sessions : Array[@session.Session]) -> Unit {
 
 ///|
 fn output_text(sessions : Array[@session.Session], use_color : Bool) -> Unit {
+  let buf = render_text(sessions, use_color)
+  println(buf.to_string())
+}
+
+///|
+/// Render session list as text into a StringBuilder.
+fn render_text(
+  sessions : Array[@session.Session],
+  use_color : Bool,
+) -> StringBuilder {
+  let buf = StringBuilder::new()
   if sessions.is_empty() {
-    println("No active sessions")
-    return
+    buf.write_string("No active sessions")
+    return buf
   }
   let now = @ffi.now_unix()
   let pane_header = @terminal.pane_column_header(sessions)
@@ -110,34 +132,33 @@ fn output_text(sessions : Array[@session.Session], use_color : Bool) -> Unit {
     w_elapsed = @cmp.maximum(w_elapsed, elapsed.length())
     w_session = @cmp.maximum(w_session, session_elapsed.length())
   }
-  // Print header
-  let sb = StringBuilder::new()
-  sb.write_string(pad_right("PROJECT", w_project + 2))
-  sb.write_string(pad_right("STATE", w_state + 2))
-  sb.write_string(pad_right("ELAPSED", w_elapsed + 2))
-  sb.write_string(pad_right("SESSION", w_session + 2))
+  // Header
+  buf.write_string(pad_right("PROJECT", w_project + 2))
+  buf.write_string(pad_right("STATE", w_state + 2))
+  buf.write_string(pad_right("ELAPSED", w_elapsed + 2))
+  buf.write_string(pad_right("SESSION", w_session + 2))
   if show_pane {
-    sb.write_string(pane_header)
+    buf.write_string(pane_header)
   }
-  println(sb.to_string())
-  // Print rows
+  buf.write_char('\n')
+  // Rows
   for row in rows {
     let (project, state_display, elapsed, session_elapsed, pane) = row
-    let row_sb = StringBuilder::new()
-    row_sb.write_string(pad_right(project, w_project + 2))
+    buf.write_string(pad_right(project, w_project + 2))
     // State needs special padding (ANSI-aware)
     let state_visible_len = strip_ansi(state_display).length()
-    row_sb.write_string(state_display)
+    buf.write_string(state_display)
     for _ in 0..<(w_state + 2 - state_visible_len) {
-      row_sb.write_char(' ')
+      buf.write_char(' ')
     }
-    row_sb.write_string(pad_right(elapsed, w_elapsed + 2))
-    row_sb.write_string(pad_right(session_elapsed, w_session + 2))
+    buf.write_string(pad_right(elapsed, w_elapsed + 2))
+    buf.write_string(pad_right(session_elapsed, w_session + 2))
     if show_pane {
-      row_sb.write_string(pane)
+      buf.write_string(pane)
     }
-    println(row_sb.to_string())
+    buf.write_char('\n')
   }
+  buf
 }
 
 ///|

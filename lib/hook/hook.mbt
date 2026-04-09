@@ -142,9 +142,7 @@ pub async fn fire(cfg : @config.Config?, ctx : HookContext) -> Unit {
       env["MONITOR_PREV_STATE"] = prev_state_str
       env["MONITOR_PANE_ID"] = ctx.pane_id
       env["MONITOR_PANE_TERMINAL"] = ctx.pane_terminal
-      ignore(
-        @process.spawn_orphan("sh", ["-c", typed.command], extra_env=env),
-      )
+      ignore(@process.spawn_orphan("sh", ["-c", typed.command], extra_env=env))
     }
   }
 }

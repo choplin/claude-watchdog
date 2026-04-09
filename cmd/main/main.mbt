@@ -16,6 +16,7 @@ async fn main {
     Some(("update", m)) => @commands.run_update(m)
     Some(("delete", m)) => @commands.run_delete(m)
     Some(("reconcile", m)) => @commands.run_reconcile(m)
+    Some(("watch", m)) => @commands.run_watch(m)
     _ => ()
   }
 }

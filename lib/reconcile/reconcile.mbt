@@ -10,9 +10,7 @@ async fn list_panes(terminal : String) -> Map[String, Unit]? {
     "wez" => ("wezterm", ["cli", "list", "--format", "json"])
     _ => return None
   }
-  let result : Result[(Int, _), _] = try? @process.collect_stdout(
-    cmd, args[:],
-  )
+  let result : Result[(Int, _), _] = try? @process.collect_stdout(cmd, args[:])
   let output = match result {
     Ok((_, data)) => {
       let text : Result[String, _] = try? data.text()

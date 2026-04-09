@@ -24,11 +24,10 @@ Claude Code plugin that monitors multiple session states via hooks and SQLite. W
 
 ```bash
 # Build
-moon build --target native
-cp _build/native/debug/build/cmd/main/main.exe dist/claude-watchdog
+npm run build
 
 # Test
-moon test --target native
+npm test
 
 # Run CLI (dev)
 moon run cmd/main -- <command>
